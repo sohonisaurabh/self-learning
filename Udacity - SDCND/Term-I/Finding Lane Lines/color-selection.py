@@ -32,11 +32,12 @@ rgb_threshold = [red_threshold, green_threshold, blue_threshold]
 thresholds = (image[:,:,0] < rgb_threshold[0]) \
             | (image[:,:,1] < rgb_threshold[1]) \
             | (image[:,:,2] < rgb_threshold[2])
+print len(thresholds)
 color_select[thresholds] = [0,0,0]
 plt.imshow(color_select)
 # Display the image                 
 plt.imshow(color_select)
-plt.show()
+#plt.show()
 
 # Uncomment the following code if you are running the code locally and wish to save the image
 # mpimg.imsave("test-after.jpg", color_select)
