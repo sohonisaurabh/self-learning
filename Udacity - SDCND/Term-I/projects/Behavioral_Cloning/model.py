@@ -8,9 +8,9 @@ from keras.layers.pooling import MaxPooling2D
 import cv2
 import numpy as np
 
-def load_lines():
+def load_lines(path):
     lines = []
-    with open("data/driving_log.csv") as datafile:
+    with open(path + "/driving_log.csv") as datafile:
         reader = csv.reader(datafile)
         for line in reader:
             lines.append(line)
@@ -32,14 +32,15 @@ def get_data_generator(batch_size, lines):
         offset += batch_size
         yield (np.array(images), np.array(steering_angles))
 
-def get_data_without_generator(lines):
+def get_data_without_generator(path, lines):
     images = []
     steering_angles = []
     steering_offset = 0.25
+    print(path + "/" + lines[0][0].split("\\")[-1])
     for line in lines:
-        center_image = cv2.imread(line[0])
-        left_image = cv2.imread(line[1])
-        right_image = cv2.imread(line[2])
+        center_image = cv2.imread(path + "/IMG/" + line[0].split("\\")[-1])
+        left_image = cv2.imread(path + "/IMG/" + line[1].split("\\")[-1])
+        right_image = cv2.imread(path + "/IMG/" + line[2].split("\\")[-1])
         steering_angle_center = float(line[3])
         steering_angle_left = steering_angle_center + steering_offset
         steering_angle_right = steering_angle_center - steering_offset
@@ -75,7 +76,8 @@ def train_model_lenet(training_generator, validation_generator, batch_size=50, e
     
 def main():
     batch_size = 50
-    lines = load_lines() 
+    data_path = "recorded-data"
+    lines = load_lines(data_path) 
     training_set_lines, validation_set_lines = train_test_split(lines, test_size=0.3)
     number_of_samples = len(training_set_lines)
     epochs = int(number_of_samples/batch_size)
@@ -84,7 +86,7 @@ def main():
     #validation_generator = get_data_generator(batch_size, validation_set_lines)
     #train_model(training_generator, validation_generator, batch_size=batch_size, epochs=epochs)
 
-    training_images, steering_angles = get_data_without_generator(lines)
+    training_images, steering_angles = get_data_without_generator(data_path, lines)
     #train_model(training_images, steering_angles)
     train_model_lenet(training_images, steering_angles, epochs=4)
 
