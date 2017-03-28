@@ -1,4 +1,5 @@
-data
+recorded-data
+data-from-udacity
 .ipynb_checkpoints
 *.h5
 models
