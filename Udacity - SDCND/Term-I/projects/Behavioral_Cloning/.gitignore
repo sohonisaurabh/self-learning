@@ -1,7 +1,7 @@
+CarND-Behavioral-Cloning-P3
 recorded-data
 data-from-udacity
 .ipynb_checkpoints
-*.h5
 models
 *.swp
 *.p
