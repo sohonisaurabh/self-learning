@@ -78,8 +78,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       /**
       Initialize state.
       */
-      ekf_.x_[0] = first_measurement_x;
-      ekf_.x_[1] = first_measurement_y;
+      // ekf_.x_[0] = first_measurement_x;
+      // ekf_.x_[1] = first_measurement_y;
     }
 
     /*Initializing State uncertainity matrix*/
@@ -153,11 +153,12 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.R_ = R_radar_;
     Hj_ = tools.CalculateJacobian(ekf_.x_);
     ekf_.H_ = Hj_;
+    ekf_.UpdateEKF(measurement_pack.raw_measurements_);
   } else {
     // Laser updates
-    ekf_.R_ = R_laser_;
-    ekf_.H_ = H_laser_;
-    ekf_.Update(measurement_pack.raw_measurements_);
+    // ekf_.R_ = R_laser_;
+    // ekf_.H_ = H_laser_;
+    // ekf_.Update(measurement_pack.raw_measurements_);
   }
 
   // print the output
