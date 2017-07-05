@@ -60,11 +60,11 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   float py = x_(1);
   float vx = x_(2);
   float vy = x_(3);
-  if (px < 0.0001) {
+  /*if (px < 0.0001) {
     px = 0.0001;
   } else if (py < 0.0001) {
     py = 0.0001;
-  }
+  }*/
   float sqrt_px2_py2 = sqrt(pow(px, 2) + pow(py, 2));
   h << sqrt_px2_py2,
       atan2(py, px),
@@ -74,10 +74,10 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 
   //Normalize phi angle and bring it in the range (-pi, pi)
   while (y[1] > M_PI) {
-    y[1] -= 2. * M_PI;
+    y[1] -= 2.0 * M_PI;
   }
   while (y[1] <-M_PI) {
-    y[1] += 2. * M_PI;
+    y[1] += 2.0 * M_PI;
   }
 
   MatrixXd Ht = H_.transpose();
