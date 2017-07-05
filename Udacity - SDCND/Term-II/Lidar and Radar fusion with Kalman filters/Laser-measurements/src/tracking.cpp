@@ -1,6 +1,6 @@
-#include "Dense"
 #include <iostream>
 #include "tracking.h"
+#include "Eigen/Dense"
 
 using namespace std;
 using Eigen::MatrixXd;
@@ -68,8 +68,8 @@ void Tracking::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 	
     // TODO: YOUR CODE HERE
 	//1. Modify the F matrix so that the time is integrated
-	kf_.F_[0, 2] = dt;
-	kf_.F_[1, 3] = dt;
+	kf_.F_.col(0)[2] = dt;
+	kf_.F_.col(1)[3] = dt;
 	//2. Set the process covariance matrix Q
 	kf_.Q_ = MatrixXd(4, 4);
 	kf_.Q_ << (pow(dt, 4)*noise_ax/4), 0, (pow(dt, 3)*noise_ax/2), 0,

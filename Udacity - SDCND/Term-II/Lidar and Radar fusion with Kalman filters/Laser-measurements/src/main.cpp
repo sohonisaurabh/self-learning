@@ -2,7 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include "Dense"
+#include "Eigen/Dense"
 #include "measurement_package.h"
 #include "tracking.h"
 
@@ -20,7 +20,7 @@ int main() {
 	vector<MeasurementPackage> measurement_pack_list;
 
 	// hardcoded input file with laser and radar measurements
-	string in_file_name_ = "obj_pose-laser-radar-synthetic-input.txt";
+	string in_file_name_ = "../data/obj_pose-laser-radar-synthetic-input.txt";
 	ifstream in_file(in_file_name_.c_str(),std::ifstream::in);
 
 	if (!in_file.is_open()) {
