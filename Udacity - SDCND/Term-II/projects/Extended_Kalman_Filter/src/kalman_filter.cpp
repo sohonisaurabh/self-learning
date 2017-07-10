@@ -37,7 +37,7 @@ void KalmanFilter::Update(const VectorXd &z) {
   */
   VectorXd y = z - H_ * x_;
   MatrixXd Ht = H_.transpose();
-  MatrixXd S = H_ * P_ * Ht + R_;
+  MatrixXd S = (H_ * P_ * Ht) + R_;
   MatrixXd Si = S.inverse();
   MatrixXd K = P_ * Ht * Si;
 
@@ -45,7 +45,7 @@ void KalmanFilter::Update(const VectorXd &z) {
   x_ = x_ + (K * y);
   long x_size = x_.size();
   MatrixXd I = Eigen::MatrixXd::Identity(x_size, x_size);
-  P_ = (I - K * H_) * P_;
+  P_ = (I - (K * H_)) * P_;
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
@@ -60,10 +60,10 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   float py = x_(1);
   float vx = x_(2);
   float vy = x_(3);
-  /*if (px < 0.0001) {
-    px = 0.0001;
-  } else if (py < 0.0001) {
-    py = 0.0001;
+  /*if (abs(px) < 0.0001) {
+    px = -1.0 * 0.0001 * px/(-1.0 * px);
+  } else if (abs(py) < 0.0001) {
+    py = -1.0 * 0.0001 * py/(-1.0 * py);
   }*/
   float sqrt_px2_py2 = sqrt(pow(px, 2) + pow(py, 2));
   h << sqrt_px2_py2,
@@ -71,6 +71,8 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
       (px * vx + py * vy)/sqrt_px2_py2;
   cout<<"h is: "<<h<<endl;
   VectorXd y = z - h;
+
+  //y[1] = atan2(sin(y[1]), cos(y[1]));
 
   //Normalize phi angle and bring it in the range (-pi, pi)
   while (y[1] > M_PI) {
@@ -87,7 +89,7 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
 
   //new estimate
   x_ = x_ + (K * y);
-  long x_size = x_.size();
+  int x_size = x_.size();
   MatrixXd I = Eigen::MatrixXd::Identity(x_size, x_size);
-  P_ = (I - K * H_) * P_;
+  P_ = (I - (K * H_)) * P_;
 }

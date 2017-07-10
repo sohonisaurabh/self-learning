@@ -62,7 +62,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     // first measurement
     cout << "EKF: " << endl;
     ekf_.x_ = VectorXd(4);
-    ekf_.x_ << 1, 1, 1, 1;
+    ekf_.x_ << 1, 1, 0, 0;
 
     float first_measurement_x = measurement_pack.raw_measurements_[0];
     float first_measurement_y = measurement_pack.raw_measurements_[1];
@@ -84,8 +84,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
     /*Initializing State uncertainity matrix*/
     ekf_.P_ = MatrixXd(4, 4);
-    ekf_.P_ << 1, 0, 0, 0,
-        0, 1, 0, 0,
+    ekf_.P_ << 10, 0, 0, 0,
+        0, 10, 0, 0,
         0, 0, 1000, 0,
         0, 0, 0, 1000;
 
@@ -117,10 +117,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
   /*Taking into account the timestamp*/
   float deltaT = measurement_pack.timestamp_ - previous_timestamp_;
-  std::cout<<"Delta T in milliseconds is: "<<deltaT<<std::endl;
   //Converting time to seconds.
   deltaT = deltaT/pow(10.0, 6);
-  std::cout<<"Delta T is: "<<deltaT<<std::endl;
 
   //Setting previous timestamp to current timestamp
   previous_timestamp_ = measurement_pack.timestamp_;
@@ -132,8 +130,14 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   float time_r3 = pow(deltaT, 3);
   float time_r4 = pow(deltaT, 4);
 
-  ekf_.F_.col(0)[2] = deltaT;
-  ekf_.F_.col(1)[3] = deltaT;
+  // /*Initializing State transition matrix*/
+  //   ekf_.F_ = MatrixXd(4, 4);
+  //   ekf_.F_ << 1, 0, deltaT, 0,
+  //       0, 1, 0, deltaT,
+  //       0, 0, 1, 0,
+  //       0, 0, 0, 1;
+  ekf_.F_.row(0)[2] = deltaT;
+  ekf_.F_.row(1)[3] = deltaT;
 
   ekf_.Q_ = MatrixXd(4, 4);
   ekf_.Q_ << time_r4*noise_ax/4, 0, time_r3*noise_ax/2, 0,
