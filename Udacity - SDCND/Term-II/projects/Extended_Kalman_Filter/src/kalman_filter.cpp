@@ -1,8 +1,6 @@
 #include "kalman_filter.h"
 #include <math.h>
-#include <iostream>
 
-using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
@@ -28,6 +26,9 @@ void KalmanFilter::Predict() {
   x_ = F_ * x_;
   MatrixXd Ft = F_.transpose();
   P_ = F_ * P_ * Ft + Q_;
+  /**
+  TODO COMPLETED
+  */
 }
 
 void KalmanFilter::Update(const VectorXd &z) {
@@ -46,6 +47,9 @@ void KalmanFilter::Update(const VectorXd &z) {
   long x_size = x_.size();
   MatrixXd I = Eigen::MatrixXd::Identity(x_size, x_size);
   P_ = (I - (K * H_)) * P_;
+  /**
+  TODO COMPLETED
+  */
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
@@ -60,19 +64,17 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   float py = x_(1);
   float vx = x_(2);
   float vy = x_(3);
-  /*if (abs(px) < 0.0001) {
-    px = -1.0 * 0.0001 * px/(-1.0 * px);
-  } else if (abs(py) < 0.0001) {
-    py = -1.0 * 0.0001 * py/(-1.0 * py);
-  }*/
   float sqrt_px2_py2 = sqrt(pow(px, 2) + pow(py, 2));
+  //Prevent division by zero
+  if (sqrt_px2_py2 < 0.0001) {
+    sqrt_px2_py2 = 0.0001;
+  }
+
+  //Set measurement function
   h << sqrt_px2_py2,
       atan2(py, px),
       (px * vx + py * vy)/sqrt_px2_py2;
-  cout<<"h is: "<<h<<endl;
   VectorXd y = z - h;
-
-  //y[1] = atan2(sin(y[1]), cos(y[1]));
 
   //Normalize phi angle and bring it in the range (-pi, pi)
   while (y[1] > M_PI) {

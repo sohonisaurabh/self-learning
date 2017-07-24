@@ -17,12 +17,6 @@ UKF::UKF() {
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
 
-  // initial state vector
-  x_ = VectorXd(5);
-
-  // initial covariance matrix
-  P_ = MatrixXd(5, 5);
-
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 30;
 
@@ -51,6 +45,16 @@ UKF::UKF() {
 
   Hint: one or more values initialized above might be wildly off...
   */
+  is_initialized_ = false;
+
+  //State vector dimensions
+  n_x_ = 5;
+
+  // initial state vector
+  x_ = VectorXd(n_x_);
+
+  // initial covariance matrix
+  P_ = MatrixXd(n_x_, n_x_);
 }
 
 UKF::~UKF() {}
@@ -65,7 +69,60 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
   Complete this function! Make sure you switch between lidar and radar
   measurements.
+
+  1. Initialization structure similar to EKF
+  2. Extract deltaT
+  3. Call Prediction() method
+  4. Go into control stucture for Laser and Radar for the update step
+  5. 
   */
+ 
+  //1. Initialization structure similar to EKF
+  // Filter is not initialized. Treat the first measurement here.
+  if (!is_initialized_) {
+    x_ << 1, 1, 0, 0, 0;
+
+    //Caching components of first measurement
+    float first_measurement_comp1 = meas_package.raw_measurements_[0];
+    float first_measurement_comp2 = meas_package.raw_measurements_[1];
+
+    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+      /**
+      RADAR measures rho (radial distance) and phi (angle w.r.t direction axis of car),
+      Hence, Convert radar from polar to cartesian coordinates to get px and py. phi is
+      nothing but the yaw angle. There is no information on velocity and rate of change of
+      yaw angle.
+      */
+      x_[0] = first_measurement_comp1*cos(first_measurement_comp2);
+      x_[1] = first_measurement_comp1*sin(first_measurement_comp2);
+      x_[2] = first_measurement_comp2;
+    }
+    else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+      /**
+      LASER measures px and py. Hence, first two values go directly. However, there is no
+      information on velocity, yaw angle and rate of change of yaw angle.
+      */
+      x_[0] = first_measurement_comp1;
+      x_[1] = first_measurement_comp2;
+    }
+    /**
+     *Initializing State uncertainity matrix. Based on R_laser and R_radar, it is found that
+     *uncertainty in measurement of position px and py is less (certain upto 0.1 units). While,
+     *there is no information on velocity, uncertainty in vx and vy is high.
+     */
+    P_ << 10, 0, 0, 0, 0,
+        0, 10, 0, 0, 0,
+        0, 0, 1000, 0, 0,
+        0, 0, 0, 10, 0,
+        0, 0, 0, 0, 1000;
+
+    time_us_ = measurement_pack.timestamp_;
+
+    // done initializing, no need to predict or update
+    is_initialized_ = true;
+    return;
+  }
+
 }
 
 /**
@@ -79,6 +136,12 @@ void UKF::Prediction(double delta_t) {
 
   Complete this function! Estimate the object's location. Modify the state
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
+
+  1. The state transition function F in the case of CTRV model is non-linear, hence
+      the prediction step will have to go through UKF sigma points approximation.
+  2. Generate sigma points for step Xt (Use augmented sigma points to consider process noise)
+  3. Calculate sigma points for step Xt+deltaT by passing them through F.
+  4. Predict the mean and covariance of step Xt+deltaT
   */
 }
 
@@ -94,6 +157,10 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   position. Modify the state vector, x_, and covariance, P_.
 
   You'll also need to calculate the lidar NIS.
+
+  1. This process is Linear, hence use regular Kalman Filter equations.
+  2. This is same as the one used in EKF
+  3. Calculate NIS for Laser
   */
 }
 
@@ -109,5 +176,12 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   position. Modify the state vector, x_, and covariance, P_.
 
   You'll also need to calculate the radar NIS.
+
+  1. This process is non-linear, so use UKF here.
+  2. Make use of sigma points predicted in Predict step (Xsig_pred). Transform them to measurement 
+  space to get transformed sigma points(Zsig).
+  3. Find mean and covariance to get vector z.
+  4. Use Xsig_pred, Zsig and z to find Kalman gain.
+  5. Update x and P accordingly.
   */
 }

@@ -38,6 +38,9 @@ FusionEKF::FusionEKF() {
   */
   H_laser_ << 1, 0, 0, 0,
         0, 1, 0, 0;
+  /**
+  TODO COMPLETED
+  */
 
 }
 
@@ -59,30 +62,38 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       * Create the covariance matrix.
       * Remember: you'll need to convert radar from polar to cartesian coordinates.
     */
-    // first measurement
     cout << "EKF: " << endl;
+    //Declaring state vector efk_.x_ and assigining to 1, 1, 0, 0
+    //Velocity(vx and vy) is assumed to be zero at the beginning.
     ekf_.x_ = VectorXd(4);
     ekf_.x_ << 1, 1, 0, 0;
 
+    //Caching x and y components of first measurement
     float first_measurement_x = measurement_pack.raw_measurements_[0];
     float first_measurement_y = measurement_pack.raw_measurements_[1];
 
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
       /**
-      Convert radar from polar to cartesian coordinates and initialize state.
+      RADAR measures rho (radial distance) and phi (angle w.r.t direction axis of car),
+      while the state vector contains px and py.
+      Hence, Convert radar from polar to cartesian coordinates and initialize state.
       */
       ekf_.x_[0] = first_measurement_x*cos(first_measurement_y);
       ekf_.x_[1] = first_measurement_x*sin(first_measurement_y);
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       /**
-      Initialize state.
+      No need of conversion here as LASER measures px and py.
       */
       ekf_.x_[0] = first_measurement_x;
       ekf_.x_[1] = first_measurement_y;
     }
 
-    /*Initializing State uncertainity matrix*/
+    /**
+     *Initializing State uncertainity matrix. Based on R_laser and R_radar, it is found that
+     *uncertainty in measurement of position px and py is less (certain upto 0.1 units). While,
+     *there is no information on velocity, uncertainty in vx and vy is high.
+     */
     ekf_.P_ = MatrixXd(4, 4);
     ekf_.P_ << 10, 0, 0, 0,
         0, 10, 0, 0,
@@ -91,7 +102,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
     previous_timestamp_ = measurement_pack.timestamp_;
 
-    /*Initializing State transition matrix*/
+    /**
+     *Declaration of F matrix once. F matrix is updated with deltaT for every measurement received.
+     *Initializing State transition matrix*/
     ekf_.F_ = MatrixXd(4, 4);
     ekf_.F_ << 1, 0, 1, 0,
         0, 1, 0, 1,
@@ -130,15 +143,11 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   float time_r3 = pow(deltaT, 3);
   float time_r4 = pow(deltaT, 4);
 
-  // /*Initializing State transition matrix*/
-  //   ekf_.F_ = MatrixXd(4, 4);
-  //   ekf_.F_ << 1, 0, deltaT, 0,
-  //       0, 1, 0, deltaT,
-  //       0, 0, 1, 0,
-  //       0, 0, 0, 1;
+  //Update F matrix to take into account deltaT for latest measurement received.
   ekf_.F_.row(0)[2] = deltaT;
   ekf_.F_.row(1)[3] = deltaT;
 
+  //Declare and fill state covariance matrix representing stocastic part of motion.
   ekf_.Q_ = MatrixXd(4, 4);
   ekf_.Q_ << time_r4*noise_ax/4, 0, time_r3*noise_ax/2, 0,
       0, time_r4*noise_ay/4, 0, time_r3*noise_ay/2,
@@ -158,13 +167,13 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    */
 
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
-    // Radar updates
+    // Radar updates. Proceed with Extended Kalman filter.
     ekf_.R_ = R_radar_;
     Hj_ = tools.CalculateJacobian(ekf_.x_);
     ekf_.H_ = Hj_;
     ekf_.UpdateEKF(measurement_pack.raw_measurements_);
   } else {
-    // Laser updates
+    // Laser updates. Proceed with normal Kalman filter.
     ekf_.R_ = R_laser_;
     ekf_.H_ = H_laser_;
     ekf_.Update(measurement_pack.raw_measurements_);
