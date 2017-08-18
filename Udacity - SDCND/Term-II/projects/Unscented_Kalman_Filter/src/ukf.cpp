@@ -123,9 +123,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
      */
     P_ << 1, 0, 0, 0, 0,
         0, 1, 0, 0, 0,
-        0, 0, 1, 0, 0,
+        0, 0, 10, 0, 0,
         0, 0, 0, 1, 0,
-        0, 0, 0, 0, 1;
+        0, 0, 0, 0, 10;
 
     time_us_ = meas_package.timestamp_;
 
@@ -157,7 +157,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    *  Update
    ****************************************************************************/
    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
-    //UpdateRadar(meas_package);
+    UpdateRadar(meas_package);
+    std::cout<<"Radar update successful!"<<std::endl;
   } else {
     UpdateLidar(meas_package);
     std::cout<<"Lidar update successful!"<<std::endl;
@@ -291,7 +292,8 @@ void UKF::Prediction(double delta_t) {
       }
   }
   // std::cout<<"Weights are: "<<weights_<<std::endl;
-
+  x_.fill(0.0);
+  P_.fill(0.0);
   //Calculation of predicted state x_
   for (int i = 0; i < n_sigma; i++) {
       //predict state mean
@@ -389,6 +391,11 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //1. This process is non-linear, so use UKF here.
   //set measurement dimension, radar can measure r, phi, and r_dot
   int n_z = 3;
+  MatrixXd R_radar = MatrixXd(n_z, n_z);
+  R_radar.fill(0.0);
+  R_radar << std_radr_*std_radr_, 0, 0,
+        0, std_radphi_*std_radphi_, 0,
+        0, 0, std_radrd_*std_radrd_;
 
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
@@ -396,15 +403,21 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   //mean predicted measurement
   VectorXd z_pred = VectorXd(n_z);
   z_pred.fill(0.0);
+  // std::cout << "z_pred is: " << std::endl << z_pred << std::endl;
   
   //measurement covariance matrix S
   MatrixXd S = MatrixXd(n_z,n_z);
   S.fill(0.0);
+  // std::cout << "S is: " << std::endl << S << std::endl;
 
   /*2. Make use of sigma points predicted in Predict step (Xsig_pred_). Transform them to measurement 
     space to get transformed sigma points(Zsig).*/
-  VectorXd Xsig_col;
+  VectorXd Xsig_col = VectorXd(Xsig_pred_.rows());
+  Xsig_col.fill(0.0);
+  // std::cout << "Xsig_col is: " << std::endl << Xsig_col << std::endl;
   VectorXd Zsig_col = VectorXd(n_z);
+  Zsig_col.fill(0.0);
+  // std::cout << "Zsig_col is: " << std::endl << Zsig_col << std::endl;
   float px, py, v, psi, sqrt_px2_py2;
 
   //transform sigma points into measurement space
@@ -415,19 +428,21 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
       v = Xsig_col[2];
       psi = Xsig_col[3];
       sqrt_px2_py2 = sqrt(pow(px, 2) + pow(py, 2));
+      if (fabs(sqrt_px2_py2) < 0.0001) {
+        sqrt_px2_py2 = 0.0001;
+      }
       Zsig_col << sqrt_px2_py2,
                 atan2(py, px),
-                (px*cos(psi)*v + py*sin(psi)*v)/sqrt_px2_py2;
+                ((px*cos(psi)*v) + (py*sin(psi)*v))/sqrt_px2_py2;
       Zsig.col(i) = Zsig_col;
   }
-  //   std::cout << "Zsig: " << std::endl << Zsig << std::endl;
+    std::cout << "Zsig: " << std::endl << Zsig << std::endl;
 
   //3. Find mean and covariance to get vector z.
-  z_pred.fill(0.0);
   for (int i = 0; i < Zsig.cols(); i++) {
       z_pred += weights_[i] * Zsig.col(i);
   }
-  //std::cout << "z_pred: " << std::endl << z_pred << std::endl;
+  // std::cout << "z_pred: " << std::endl << z_pred << std::endl;
 
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {
     //residual
@@ -437,12 +452,15 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
     while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
 
-    S = S + weights_(i) * z_diff * z_diff.transpose();
+    S += weights_(i) * z_diff * z_diff.transpose();
   }
+  S += R_radar;
+  std::cout << "S: " << std::endl << S << std::endl;
 
   //4. Use Xsig_pred_, Zsig and z to find Kalman gain.
   //create example vector for incoming radar measurement
   VectorXd z = meas_package.raw_measurements_;
+  std::cout << "z is: " << std::endl << z << std::endl;
 
   //create matrix for cross correlation Tc
   MatrixXd Tc = MatrixXd(n_x_, n_z);
