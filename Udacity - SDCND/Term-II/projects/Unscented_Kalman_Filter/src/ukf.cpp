@@ -292,6 +292,7 @@ void UKF::Prediction(double delta_t) {
       }
   }
   // std::cout<<"Weights are: "<<weights_<<std::endl;
+  //Reset x_ and P_ to zero as we are using recursive summation
   x_.fill(0.0);
   P_.fill(0.0);
   //Calculation of predicted state x_
