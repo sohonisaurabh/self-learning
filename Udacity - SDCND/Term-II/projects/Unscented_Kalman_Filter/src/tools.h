@@ -24,6 +24,11 @@ public:
   */
   VectorXd CalculateRMSE(const vector<VectorXd> &estimations, const vector<VectorXd> &ground_truth);
 
+  /**
+   * Calculates NIS from the current state of system after measurement.
+   */
+  float CalculateNIS(VectorXd &y, MatrixXd &S_inverse);
+
 };
 
 #endif /* TOOLS_H_ */

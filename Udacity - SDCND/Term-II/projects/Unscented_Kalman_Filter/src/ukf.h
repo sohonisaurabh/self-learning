@@ -67,6 +67,8 @@ public:
   ///* Sigma point spreading parameter
   double lambda_;
 
+  ///* NIS of system calculated after each measurement
+  float nis_;
 
   /**
    * Constructor
@@ -102,6 +104,11 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
+  /**
+   * Returns the NIS for current state of system after measurement
+   */
+  float getNIS();
 };
 
 #endif /* UKF_H */

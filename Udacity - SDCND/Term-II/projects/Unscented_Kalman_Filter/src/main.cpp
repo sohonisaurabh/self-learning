@@ -26,7 +26,7 @@ std::string hasData(std::string s) {
   return "";
 }
 
-int main()
+int main(int argC, char** argV)
 {
   uWS::Hub h;
 
@@ -128,6 +128,8 @@ int main()
     	  estimations.push_back(estimate);
 
     	  VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
+
+        cout<<"NIS is: "<<ukf.getNIS();
 
           json msgJson;
           msgJson["estimate_x"] = p_x;

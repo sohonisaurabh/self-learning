@@ -1,6 +1,7 @@
 #include "ukf.h"
 #include "Eigen/Dense"
 #include <iostream>
+#include "tools.h"
 
 using namespace std;
 using Eigen::MatrixXd;
@@ -67,6 +68,8 @@ UKF::UKF() {
 
   // initial covariance matrix
   P_ = MatrixXd(n_x_, n_x_);
+
+  Tools tools;
 }
 
 UKF::~UKF() {}
@@ -330,8 +333,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   You'll also need to calculate the lidar NIS.
 
   1. This process is Linear, hence use regular Kalman Filter equations.
-  2. This is same as the one used in EKF
-  3. Calculate NIS for Laser
+  2. Calculate NIS for Laser
   */
 
   //1. This process is Linear, hence use regular Kalman Filter equations.
@@ -366,6 +368,10 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   MatrixXd I = Eigen::MatrixXd::Identity(x_size, x_size);
   P_ = (I - (K * H_laser)) * P_;
 
+  // 2. Calculate NIS for Laser
+  
+  nis_ = tools.CalculateNIS(y, Si);
+
 }
 
 /**
@@ -387,6 +393,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   3. Find mean and covariance to get vector z.
   4. Use Xsig_pred_, Zsig and z to find Kalman gain.
   5. Update x and P accordingly.
+  6. Calculate NIS
   */
 
   //1. This process is non-linear, so use UKF here.
@@ -490,6 +497,18 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   //5. Update x and P accordingly.
   //update state mean and covariance matrix
-  x_ += K * (z - z_pred);
+  VectorXd y = z - z_pred;
+  x_ += K * (y);
   P_ -= K * S * K.transpose();
+
+  //6. Calculate NIS for Laser
+  
+  nis_ = tools.CalculateNIS(y, Si);
+}
+
+/**
+ * Returns the NIS for current state of system after measurement
+ */
+float getNIS() {
+  return nis_;
 }

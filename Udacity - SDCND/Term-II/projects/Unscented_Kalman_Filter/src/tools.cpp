@@ -44,3 +44,11 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   //return the result
   return rmse;
 }
+
+/**
+ * Calculates Normalized Innovation Squared (NIS) value given the difference between actual
+ * measurement and predicted measurement and the inverse of process covariance matrix. 
+ */
+float CalculateNIS(VectorXd &y, MatrixXd &S_inverse) {
+  return y.transpose() * S_inverse * y;
+}
