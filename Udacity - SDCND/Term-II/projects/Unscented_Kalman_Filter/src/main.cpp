@@ -129,7 +129,7 @@ int main(int argC, char** argV)
 
     	  VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
 
-        cout<<"NIS is: "<<ukf.getNIS();
+        cout<<"NIS is: "<<ukf.GetNIS();
 
           json msgJson;
           msgJson["estimate_x"] = p_x;

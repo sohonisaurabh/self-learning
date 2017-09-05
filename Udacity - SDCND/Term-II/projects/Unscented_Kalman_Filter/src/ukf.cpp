@@ -8,6 +8,7 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::vector;
 
+Tools tools;
 /**
  * Initializes Unscented Kalman filter
  */
@@ -69,7 +70,9 @@ UKF::UKF() {
   // initial covariance matrix
   P_ = MatrixXd(n_x_, n_x_);
 
-  Tools tools;
+  //Initialize NIS to zero
+  nis_ = 0;
+
 }
 
 UKF::~UKF() {}
@@ -493,7 +496,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   }
 
   //calculate Kalman gain K;
-  MatrixXd K = Tc * S.inverse();
+  MatrixXd Si = S.inverse();
+  MatrixXd K = Tc * Si;
 
   //5. Update x and P accordingly.
   //update state mean and covariance matrix
@@ -509,6 +513,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 /**
  * Returns the NIS for current state of system after measurement
  */
-float getNIS() {
+float UKF::GetNIS() {
   return nis_;
 }

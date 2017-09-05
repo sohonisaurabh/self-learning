@@ -108,7 +108,7 @@ public:
   /**
    * Returns the NIS for current state of system after measurement
    */
-  float getNIS();
+  float GetNIS();
 };
 
 #endif /* UKF_H */
