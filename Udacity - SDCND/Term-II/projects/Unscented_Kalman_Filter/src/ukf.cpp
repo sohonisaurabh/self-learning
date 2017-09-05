@@ -164,10 +164,10 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
    ****************************************************************************/
    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
     UpdateRadar(meas_package);
-    std::cout<<"Radar update successful!"<<std::endl;
+    // std::cout<<"Radar update successful!"<<std::endl;
   } else {
     UpdateLidar(meas_package);
-    std::cout<<"Lidar update successful!"<<std::endl;
+    // std::cout<<"Lidar update successful!"<<std::endl;
   }
 
   // print the output
@@ -447,7 +447,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
                 ((px*cos(psi)*v) + (py*sin(psi)*v))/sqrt_px2_py2;
       Zsig.col(i) = Zsig_col;
   }
-    std::cout << "Zsig: " << std::endl << Zsig << std::endl;
+    // std::cout << "Zsig: " << std::endl << Zsig << std::endl;
 
   //3. Find mean and covariance to get vector z.
   for (int i = 0; i < Zsig.cols(); i++) {
@@ -466,12 +466,12 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     S += weights_(i) * z_diff * z_diff.transpose();
   }
   S += R_radar;
-  std::cout << "S: " << std::endl << S << std::endl;
+  // std::cout << "S: " << std::endl << S << std::endl;
 
   //4. Use Xsig_pred_, Zsig and z to find Kalman gain.
   //create example vector for incoming radar measurement
   VectorXd z = meas_package.raw_measurements_;
-  std::cout << "z is: " << std::endl << z << std::endl;
+  // std::cout << "z is: " << std::endl << z << std::endl;
 
   //create matrix for cross correlation Tc
   MatrixXd Tc = MatrixXd(n_x_, n_z);
