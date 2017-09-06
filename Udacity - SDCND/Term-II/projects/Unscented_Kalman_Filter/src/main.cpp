@@ -48,7 +48,7 @@ int main(int iArgC, char** iArgV)
     if (is_save_nis.compare("save-nis") == 0) {
       output_nis.open(iArgV[2], ofstream::out);
       if (output_nis.is_open()) {
-        output_nis<<"Sensor"<<setw(20);
+        output_nis<<"Sensor (0-Laser, 1-Radar)"<<setw(30);
         output_nis<<"Timestamp"<<setw(20);
         output_nis<<"NIS"<<setw(20)<<endl;
       }
@@ -197,6 +197,10 @@ int main(int iArgC, char** iArgV)
 
   h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, char *message, size_t length) {
     ws.close();
+    // Close the file handle if open
+    if (output_nis.is_open()) {
+      output_nis.close();
+    }
     std::cout << "Disconnected" << std::endl;
   });
 
