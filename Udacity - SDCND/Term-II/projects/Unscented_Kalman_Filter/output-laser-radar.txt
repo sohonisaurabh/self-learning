@@ -1,4 +1,4 @@
-Sensor (0-Laser, 1-Radar)                     Timestamp                 NIS
+Sensor(0-Laser,1-Radar)                     Timestamp                 NIS
                    0              125468                   0
                    1              125473             8.20664
                    0              125478            0.143358
