@@ -48,8 +48,9 @@ int main(int iArgC, char** iArgV)
     if (is_save_nis.compare("save-nis") == 0) {
       output_nis.open(iArgV[2], ofstream::out);
       if (output_nis.is_open()) {
-	output_nis<<"Timestamp"<<setw(20);
-      	output_nis<<"NIS"<<setw(20)<<endl;
+        output_nis<<"Sensor"<<setw(20);
+        output_nis<<"Timestamp"<<setw(20);
+        output_nis<<"NIS"<<setw(20)<<endl;
       }
     }
   }
@@ -147,7 +148,8 @@ int main(int iArgC, char** iArgV)
     	  VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
 	  float nis = ukf.GetNIS();
 	  float current_time_stamp_sec = meas_package.timestamp_/pow(10.0, 4);
-          cout<<"NIS is: "<<nis;
+    cout<<"NIS is: "<<nis;
+    output_nis<<meas_package.sensor_type_<<setw(20);
 	  output_nis<<current_time_stamp_sec<<setw(20);
 	  output_nis<<nis<<setw(20)<<endl;
 
