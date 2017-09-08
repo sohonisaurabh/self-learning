@@ -9,7 +9,7 @@ def main():
     radar_ninety_five_line = 7.815
     laser_above_ninety_five_count = 0
     radar_above_ninety_five_count = 0
-    file_handle = open("./../output-laser-radar.txt", "r")
+    file_handle = open("./../output-laser-radar-dataset-2.txt", "r")
     lines = file_handle.readlines()
     for line in lines:
         current_line_contents = line.split()
@@ -29,8 +29,6 @@ def main():
             if (float(current_line_contents[2]) > radar_ninety_five_line):
                 radar_above_ninety_five_count += 1
 
-    print(laser_above_ninety_five_count)
-    print(radar_above_ninety_five_count)
     plt.plot(y_axis_laser)
     plt.axhline(laser_ninety_five_line, color="black")
     plt.title("LASER NIS - " + str((laser_above_ninety_five_count*100/len(y_axis_laser))) + "% above allowed 95% line")
