@@ -40,7 +40,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	  
 	  particles.push_back(current_particle);
 	  weights.push_back(current_particle.weight);
-	  cout<<"Particle: "<<i+1<<" - "<<current_particle.x<<" "<<current_particle.y<<" "<<current_particle.theta<<endl;
+	  // cout<<"Particle: "<<i+1<<" - "<<current_particle.x<<" "<<current_particle.y<<" "<<current_particle.theta<<endl;
 	}
 	is_initialized = true;
 
@@ -68,7 +68,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	  //Instead of a hard check of 0, adding a check for very low value
 	  if (fabs(yaw_rate < 0.0001)) {
 	    // cout<<"Yaw rate is zero, so entered IF"<<endl;
-	    pred_x += particle_x + velocity * cos(particle_theta);
+	    pred_x = particle_x + velocity * cos(particle_theta);
 	    pred_y = particle_y + velocity * sin(particle_theta);
 	    pred_theta = particle_theta;
 	  } else {
@@ -203,11 +203,11 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       }
     }
     particles[i].weight = current_particle.weight;
-    // cout<<"Particle weight is: "<<particles[i].weight<<endl;
+     cout<<"Particle weight is: "<<particles[i].weight<<endl;
     weight_normalizer += current_particle.weight;
     // cout<<"Weight is: "<<current_particle.weight<<endl;
   }
-  // cout<<"Weight normalizer is: "<<weight_normalizer<<endl;
+   cout<<"Weight normalizer is: "<<weight_normalizer<<endl;
   for (i = 0; i < particles.size(); i++) {
     particles[i].weight /= weight_normalizer;
   }
