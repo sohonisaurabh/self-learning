@@ -102,6 +102,28 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   and the following is a good resource for the actual equation to implement (look at equation 
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
+  
+  int i, j;
+  for (i = 0; i < num_particles; i++) {
+    //Cache current particle
+    Particle current_particle = particles[i];
+    //Vector containing observations transformed to map co-ordinates w.r.t. current particle.
+    vector<LandmarkObs> transformed_observations;
+    
+    //Transform observations from vehicle's co-ordinates to map co-ordinates.
+    for (j = 0; j < observations.size(); j++) {
+      LandmarkObs transformed_obs;
+      transformed_obs.id = j;
+      transformed_obs.x = current_particle.x + (cos(current_particle.theta) * observations[j].x) - (sin(current_particle.theta) * observations[j].y);
+      transformed_obs.y = current_particle.y + (sin(current_particle.theta) * observations[j].x) + (cos(current_particle.theta) * observations[j].y);
+      transformed_observations.push_back(transformed_obs);
+    }
+    
+    /*Associate observations in map co-ordinates to actual landmarks using nearest neighbor algorithm. Here, the number of observations may
+    be less than the total number of landmarks as some of the landmarks may be outside the range of vehicle's sensor.*/
+    
+    
+  }
 }
 
 void ParticleFilter::resample() {
