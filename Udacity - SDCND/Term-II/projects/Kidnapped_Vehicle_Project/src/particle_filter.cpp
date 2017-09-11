@@ -61,7 +61,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	  double pred_theta;
 	  
 	  //Instead of a hard check of 0, adding a check for very low value
-	  if (yaw_rate < 0.0001) {
+	  if (fabs(yaw_rate < 0.0001)) {
 	    pred_x += particle_x + velocity * cos(particle_theta);
 	    pred_y = particle_y + velocity * sin(particle_theta);
 	    pred_theta = particle_theta;
@@ -82,11 +82,34 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 
 }
 
-void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
+void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations, double sensor_range) {
 	// TODO: Find the predicted measurement that is closest to each observed measurement and assign the 
 	//   observed measurement to this particular landmark.
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
+	
+	/*Associate observations in map co-ordinates to predicted landmarks using nearest neighbor algorithm. Here, the number of observations may
+    be less than the total number of landmarks as some of the landmarks may be outside the range of vehicle's sensor.*/
+  
+  int i, j;
+  for (i = 0; i < observations.size(); i++) {
+    //Maximum distance can be square root of 2 times the range of sensor.
+    double lowest_dist = sensor_range * sqrt(2);
+    int closest_landmark_id = -1;
+    double current_dist;
+    LandmarkObs current_obs = observations[i];
+    
+    for (j = 0; j < predicted.size(); j++) {
+      LandmarkObs current_pred = predicted[j];
+      current_dist = dist(current_obs.x, current_obs.y, current_pred.x, current_pred.y);
+      
+      if (current_dist < lowest_dist) {
+        lowest_dist = current_dist;
+        closest_landmark_id = current_pred.id;
+      }
+    }
+    current_obs.id = closet_landmark_id;
+  }  
 
 }
 
@@ -119,10 +142,42 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       transformed_observations.push_back(transformed_obs);
     }
     
-    /*Associate observations in map co-ordinates to actual landmarks using nearest neighbor algorithm. Here, the number of observations may
-    be less than the total number of landmarks as some of the landmarks may be outside the range of vehicle's sensor.*/
+    /*Filter map landmarks to keep only those which are in the sensor_range of current particle. Push them to predictions vector.*/
+    vector<LandmarkObs> predicted_landmarks;
+    for (j = 0; j < map_landmarks.landmark_list.size(); j++) {
+      Map::single_landmark_s current_landmark = map_landmarks.landmark_list[j];
+      if ((fabs((current_particle.x - current_landmark.x_f)) <= sensor_range) && (fabs((current_particle.y - current_landmark.y_f)) <= sensor_range)) {
+        predicted_landmarks.push_back(LandmarkObs {current_landmark.id_i, current_landmark.x_f, current_landmark.y_f});
+      }
+    }
     
+    //Associate observations with predicted landmarks
+    dataAssociation(predicted_landmarks, transformed_observations, sensor_range);
     
+    //Reset the weight of particle to 1.
+    current_particle.weight = 1;
+    double sigma_x = std_landmark[0];
+    double sigma_y = std_landmark[1];
+    double sigma_x_2 = pow(sigma_x, 2);
+    double sigma_y_2 = pow(sigma_y, 2);
+    double normalizer = (1.0/(2.0 * M_PI * sigma_x * sigma_y));
+    int k, l;
+    
+    /*Calculate the weight of particle based on the multivariate Gaussian probability function*/
+    for (k = 0; k < transformed_observations.size(); k++) {
+      LandmarkObs current_obs = transformed_observations[k];
+      double multi_prob;
+      
+      for (l = 0; l < predicted_landmarks.size(); l++) {
+        LandmarkObs current_pred = predicted_landmarks[l];
+        
+        if (current_obs.id == current_pred.id) {
+          multi_prob = normalizer * exp(-1.0 * ((pow((current_obs.x - current_pred.x), 2)/(2.0 * sigma_x_2)) + (pow((current_obs.y - current_pred.y), 2)/(2.0 * sigma_y_2))));
+          current_particle.weight *= multi_prob;
+        }
+      }
+      cout<<"Weight is: "<<current_particle.weight<<endl;
+    }
   }
 }
 
