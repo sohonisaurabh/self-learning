@@ -11,7 +11,7 @@ int main()
 {
   //Set up parameters here
   double delta_t = 0.1; // Time elapsed between measurements [sec]
-  double sensor_range = 50; // Sensor range [m]
+  double sensor_range = 5; // Sensor range [m]
 
   double sigma_pos [3] = {0.3, 0.3, 0.01}; // GPS measurement uncertainty [x [m], y [m], theta [rad]]
   double sigma_landmark [2] = {0.3, 0.3}; // Landmark measurement uncertainty [x [m], y [m]]
@@ -47,11 +47,11 @@ int main()
 		  vector<LandmarkObs> noisy_observations;
 		  LandmarkObs obs_ref1, obs_ref2, obs_ref3;
 		  obs_ref1.x = 2;
-		  obs_ref1.x = 2;
+		  obs_ref1.y = 2;
 		  obs_ref2.x = 3;
-		  obs_ref2.x = -2;
+		  obs_ref2.y = -2;
 		  obs_ref3.x = 0;
-		  obs_ref3.x = 4;
+		  obs_ref3.y = -4;
 		  noisy_observations.push_back(obs_ref1);
 		  noisy_observations.push_back(obs_ref2);
 		  noisy_observations.push_back(obs_ref3);
