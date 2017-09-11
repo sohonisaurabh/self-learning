@@ -1,10 +1,3 @@
-/*
- * particle_filter.cpp
- *
- *  Created on: Dec 12, 2016
- *      Author: Tiffany Huang
- */
-
 #include <random>
 #include <algorithm>
 #include <iostream>
@@ -19,11 +12,33 @@
 
 using namespace std;
 
+using namespace std;
+
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// TODO: Set the number of particles. Initialize all particles to first position (based on estimates of 
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
+	num_particles = 100;
+	default_random_engine gen;
+	
+	normal_distribution<double> dist_x(x, std[0]);
+	normal_distribution<double> dist_y(y, std[1]);
+	normal_distribution<double> dist_theta(theta, std[2]);
+	
+	int i;
+	for (i = 0; i < num_particles; i++) {
+	  Particle current_particle;
+	  current_particle.id = i;
+	  current_particle.x = dist_x(gen);
+	  current_particle.y = dist_y(gen);
+	  current_particle.theta = dist_theta(gen);
+	  current_particle.weight = 1;
+	  
+	  particles.push_back(current_particle);
+	  weights.push_back(current_particle.weight);
+	}
+	is_initialized = true;
 
 }
 
