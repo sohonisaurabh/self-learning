@@ -19,12 +19,15 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
-	num_particles = 100;
+	num_particles = 2;
 	default_random_engine gen;
 	
 	normal_distribution<double> dist_x(x, std[0]);
 	normal_distribution<double> dist_y(y, std[1]);
 	normal_distribution<double> dist_theta(theta, std[2]);
+	cout<<"Particles initialized are as follows: "<<endl;
+	particles.push_back(Particle {6, 4, 5, -M_PI/2});
+	cout<<"Particle: "<<6<<" - "<<particles[0].x<<" "<<particles[0].y<<" "<<particles[0].theta<<endl;
 	
 	int i;
 	for (i = 0; i < num_particles; i++) {
@@ -37,6 +40,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	  
 	  particles.push_back(current_particle);
 	  weights.push_back(current_particle.weight);
+	  cout<<"Particle: "<<i+1<<" - "<<current_particle.x<<" "<<current_particle.y<<" "<<current_particle.theta<<endl;
 	}
 	is_initialized = true;
 
@@ -49,6 +53,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 	
 	default_random_engine gen;
+	cout<<"Particles predicted after prediction step are as follows: "<<endl;
 	
 	int i;
 	for (i = 0; i < num_particles; i++) {
@@ -62,10 +67,12 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	  
 	  //Instead of a hard check of 0, adding a check for very low value
 	  if (fabs(yaw_rate < 0.0001)) {
+	    cout<<"Yaw rate is zero, so entered IF"<<endl;
 	    pred_x += particle_x + velocity * cos(particle_theta);
 	    pred_y = particle_y + velocity * sin(particle_theta);
 	    pred_theta = particle_theta;
 	  } else {
+	  	cout<<"Yaw rate is not zero, so entered ELSE"<<endl;
 	    pred_x = particle_x + (velocity/yaw_rate) * (sin(particle_theta + (yaw_rate * delta_t)) - sin(particle_theta));
 	    pred_y = particle_y + (velocity/yaw_rate) * (cos(particle_theta) - cos(particle_theta + (yaw_rate * delta_t)));
 	    pred_theta = particle_theta + (yaw_rate * delta_t);
@@ -78,7 +85,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	  particles[i].x = dist_x(gen);
 	  particles[i].y = dist_y(gen);
 	  particles[i].theta = dist_theta(gen);
+	  cout<<"Particle: "<<i+1<<" - "<<particles[i].x<<" "<<particles[i].y<<" "<<particles[i].theta<<endl;
 	}
+	
 
 }
 
@@ -108,7 +117,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
         closest_landmark_id = current_pred.id;
       }
     }
-    current_obs.id = closet_landmark_id;
+    current_obs.id = closest_landmark_id;
   }  
 
 }
@@ -126,6 +135,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
   
+  cout<<"Transformed observations are as follows: "<<endl;
   int i, j;
   for (i = 0; i < num_particles; i++) {
     //Cache current particle
@@ -140,6 +150,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       transformed_obs.x = current_particle.x + (cos(current_particle.theta) * observations[j].x) - (sin(current_particle.theta) * observations[j].y);
       transformed_obs.y = current_particle.y + (sin(current_particle.theta) * observations[j].x) + (cos(current_particle.theta) * observations[j].y);
       transformed_observations.push_back(transformed_obs);
+      cout<<"Observation: "<<j<<" - "<<transformed_obs.x<<" "<<transformed_obs.y<<" "<<endl;
     }
     
     /*Filter map landmarks to keep only those which are in the sensor_range of current particle. Push them to predictions vector.*/
