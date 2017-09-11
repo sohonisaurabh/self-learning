@@ -19,14 +19,14 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
-	num_particles = 1;
+	num_particles = 100;
 	default_random_engine gen;
 	
 	normal_distribution<double> dist_x(x, std[0]);
 	normal_distribution<double> dist_y(y, std[1]);
 	normal_distribution<double> dist_theta(theta, std[2]);
 	// cout<<"Particles initialized are as follows: "<<endl;
-	particles.push_back(Particle {6, 4, 5, -M_PI/2});
+	// particles.push_back(Particle {6, 4, 5, -M_PI/2});
 	// cout<<"Particle: "<<6<<" - "<<particles[0].x<<" "<<particles[0].y<<" "<<particles[0].theta<<endl;
 	
 	int i;
@@ -140,6 +140,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
   
   // cout<<"Transformed observations are as follows: "<<endl;
   int i, j;
+  double weight_normalizer = 0.0;
   for (i = 0; i < num_particles; i++) {
     //Cache current particle
     Particle current_particle = particles[i];
@@ -154,7 +155,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
       transformed_obs.y = current_particle.y + (sin(current_particle.theta) * observations[j].x) + (cos(current_particle.theta) * observations[j].y);
       transformed_observations.push_back(transformed_obs);
       // cout<<"Observation in vehicle co-ordinates: "<<j<<" - "<<observations[j].x<<" "<<observations[j].y<<" "<<endl;
-      cout<<"Transformed Observation: "<<j<<" - "<<transformed_obs.x<<" "<<transformed_obs.y<<" "<<endl;
+      // cout<<"Transformed Observation: "<<j<<" - "<<transformed_obs.x<<" "<<transformed_obs.y<<" "<<endl;
     }
     
     // cout<<"Landmarks inside sensor's range are as follows: "<<endl;
@@ -200,9 +201,15 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
           current_particle.weight *= multi_prob;
         }
       }
-      particles[i].weight = current_particle.weight;
-      // cout<<"Weight is: "<<current_particle.weight<<endl;
     }
+    particles[i].weight = current_particle.weight;
+    // cout<<"Particle weight is: "<<particles[i].weight<<endl;
+    weight_normalizer += current_particle.weight;
+    // cout<<"Weight is: "<<current_particle.weight<<endl;
+  }
+  // cout<<"Weight normalizer is: "<<weight_normalizer<<endl;
+  for (i = 0; i < particles.size(); i++) {
+    particles[i].weight /= weight_normalizer;
   }
 }
 
@@ -219,7 +226,7 @@ void ParticleFilter::resample() {
 	int i;
 	for (i = 0; i < particles.size(); i++) {
 	   weights.push_back(particles[i].weight);
-	  // cout<<"Weight: "<<particles[i].weight<<endl;
+	   // cout<<"Weight: "<<particles[i].weight<<endl;
 	}
 	
 	// Create a generator to be used for generating random particle index and beta value
