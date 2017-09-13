@@ -19,7 +19,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
-	num_particles = 100;
+	num_particles = 10;
 	default_random_engine gen;
 	
 	normal_distribution<double> dist_x(x, std[0]);
@@ -105,22 +105,31 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
   for (i = 0; i < observations.size(); i++) {
     //Maximum distance can be square root of 2 times the range of sensor.
     double lowest_dist = sensor_range * sqrt(2);
+    // cout<<"Max possible distance is: "<<lowest_dist<<endl;
     int closest_landmark_id = -1;
-    double current_dist;
-    LandmarkObs current_obs = observations[i];
+    double obs_x = observations[i].x;
+    double obs_y = observations[i].y;
     
     for (j = 0; j < predicted.size(); j++) {
-      LandmarkObs current_pred = predicted[j];
-      current_dist = dist(current_obs.x, current_obs.y, current_pred.x, current_pred.y);
+      double pred_x = predicted[j].x;
+      double pred_y = predicted[j].y;
+      int pred_id = predicted[j].id;
+      double current_dist = dist(obs_x, obs_y, pred_x, pred_y);
       
       if (current_dist < lowest_dist) {
         lowest_dist = current_dist;
-        closest_landmark_id = current_pred.id;
+        closest_landmark_id = pred_id;
       }
     }
     observations[i].id = closest_landmark_id;
-    // cout<<"Current Observation: "<<" - "<<current_obs.x<<" "<<current_obs.y<<" "<<endl;
-    // cout<<"Current Association: "<<" - "<<closest_landmark_id<<endl;
+    cout<<"Closest landmark ID is: "<<closest_landmark_id<<endl;
+    cout<<"Current Observation: "<<" - "<<obs_x<<" "<<obs_y<<" "<<endl;
+    for (int k = 0; k < predicted.size(); k++) {
+      LandmarkObs current_pred = predicted[k];
+      if (current_pred.id == closest_landmark_id) {
+        cout<<"Current Association: "<<" - "<<current_pred.x<<" "<<current_pred.y<<endl;
+      }
+    }
   }  
 
 }
@@ -142,8 +151,10 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
   int i, j;
   double weight_normalizer = 0.0;
   for (i = 0; i < num_particles; i++) {
-    //Cache current particle
-    Particle current_particle = particles[i];
+    double particle_x = particles[i].x;
+    double particle_y = particles[i].y;
+    double particle_theta = particles[i].theta;
+    
     //Vector containing observations transformed to map co-ordinates w.r.t. current particle.
     vector<LandmarkObs> transformed_observations;
     
@@ -151,8 +162,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     for (j = 0; j < observations.size(); j++) {
       LandmarkObs transformed_obs;
       transformed_obs.id = j;
-      transformed_obs.x = current_particle.x + (cos(current_particle.theta) * observations[j].x) - (sin(current_particle.theta) * observations[j].y);
-      transformed_obs.y = current_particle.y + (sin(current_particle.theta) * observations[j].x) + (cos(current_particle.theta) * observations[j].y);
+      transformed_obs.x = particle_x + (cos(particle_theta) * observations[j].x) - (sin(particle_theta) * observations[j].y);
+      transformed_obs.y = particle_y + (sin(particle_theta) * observations[j].x) + (cos(particle_theta) * observations[j].y);
       transformed_observations.push_back(transformed_obs);
       // cout<<"Observation in vehicle co-ordinates: "<<j<<" - "<<observations[j].x<<" "<<observations[j].y<<" "<<endl;
       // cout<<"Transformed Observation: "<<j<<" - "<<transformed_obs.x<<" "<<transformed_obs.y<<" "<<endl;
@@ -163,7 +174,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     vector<LandmarkObs> predicted_landmarks;
     for (j = 0; j < map_landmarks.landmark_list.size(); j++) {
       Map::single_landmark_s current_landmark = map_landmarks.landmark_list[j];
-      if ((fabs((current_particle.x - current_landmark.x_f)) <= sensor_range) && (fabs((current_particle.y - current_landmark.y_f)) <= sensor_range)) {
+      if ((fabs((particle_x - current_landmark.x_f)) <= sensor_range) && (fabs((particle_y - current_landmark.y_f)) <= sensor_range)) {
         predicted_landmarks.push_back(LandmarkObs {current_landmark.id_i, current_landmark.x_f, current_landmark.y_f});
         // cout<<"Landmark: "<<j<<" - "<<current_landmark.x_f<<" "<<current_landmark.y_f<<" "<<endl;
       }
@@ -173,7 +184,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     dataAssociation(predicted_landmarks, transformed_observations, sensor_range);
     
     //Reset the weight of particle to 1.
-    current_particle.weight = 1.0;
+    particles[i].weight = 1.0;
     double sigma_x = std_landmark[0];
     double sigma_y = std_landmark[1];
     double sigma_x_2 = pow(sigma_x, 2);
@@ -187,29 +198,40 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     // cout<<"Multi-variate Gaussion probabilities are as follows: "<<endl;
     /*Calculate the weight of particle based on the multivariate Gaussian probability function*/
     for (k = 0; k < transformed_observations.size(); k++) {
-      LandmarkObs current_obs = transformed_observations[k];
-      double multi_prob = 0;
+      double trans_obs_x = transformed_observations[k].x;
+      double trans_obs_y = transformed_observations[k].y;
+      double trans_obs_id = transformed_observations[k].id;
+      double multi_prob = 1.0;
       // cout<<"Observations to association tagging ID is: "<<current_obs.id<<endl;
       
       for (l = 0; l < predicted_landmarks.size(); l++) {
-        LandmarkObs current_pred = predicted_landmarks[l];
+        double pred_landmark_x = predicted_landmarks[l].x;
+        double pred_landmark_y = predicted_landmarks[l].y;
+        double pred_landmark_id = predicted_landmarks[l].id;
         // cout<<"Landmark ID is: "<<current_pred.id;
         
-        if (current_obs.id == current_pred.id) {
-          multi_prob = normalizer * exp(-1.0 *((pow((current_obs.x - current_pred.x), 2)/(2.0 * sigma_x_2)) + (pow((current_obs.y - current_pred.y), 2)/(2.0 * sigma_y_2))));
-          // cout<<"Current prob is: "<<multi_prob;
-          current_particle.weight *= multi_prob;
+        if (trans_obs_id == pred_landmark_id) {
+          multi_prob = normalizer * exp(-1.0 * ((pow((trans_obs_x - pred_landmark_x), 2)/(2.0 * sigma_x_2)) + (pow((trans_obs_y - pred_landmark_y), 2)/(2.0 * sigma_y_2))));
+          // multi_prob = normalizer;
+          /*if (multi_prob == 0) {
+            cout<<"Current obs x: "<<current_obs.x<<endl;
+            cout<<"Current obs y: "<<current_obs.y<<endl;
+            cout<<"Current pred x: "<<current_pred.x<<endl;
+            cout<<"Current pred y: "<<current_pred.y<<endl;
+          }*/
+          cout<<"Current prob is: "<<multi_prob<<endl;
+          particles[i].weight *= multi_prob;
         }
       }
     }
-    particles[i].weight = current_particle.weight;
-     cout<<"Particle weight is: "<<particles[i].weight<<endl;
-    weight_normalizer += current_particle.weight;
+    // cout<<"Particle weight is: "<<particles[i].weight<<endl;
+    weight_normalizer += particles[i].weight;
     // cout<<"Weight is: "<<current_particle.weight<<endl;
   }
    cout<<"Weight normalizer is: "<<weight_normalizer<<endl;
-  for (i = 0; i < particles.size(); i++) {
+  for (int i = 0; i < particles.size(); i++) {
     particles[i].weight /= weight_normalizer;
+    weights[i] = particles[i].weight;
   }
 }
 
@@ -221,13 +243,6 @@ void ParticleFilter::resample() {
 	vector<Particle> resampled_particles;
 	
 	// cout<<"Weights finally are: "<<endl;
-	// Cache weights into a vector
-	vector<double> weights;
-	int i;
-	for (i = 0; i < particles.size(); i++) {
-	   weights.push_back(particles[i].weight);
-	   // cout<<"Weight: "<<particles[i].weight<<endl;
-	}
 	
 	// Create a generator to be used for generating random particle index and beta value
 	default_random_engine gen;
@@ -243,7 +258,7 @@ void ParticleFilter::resample() {
 	double max_weight_2 = 2.0 * *max_element(weights.begin(), weights.end());
 	// cout<<"Max weight is: "<<max_weight_2;
 	
-	for (i = 0; i < particles.size(); i++) {
+	for (int i = 0; i < particles.size(); i++) {
 	 uniform_real_distribution<double> random_weight(0.0, max_weight_2);
 	 // cout<< "Random weight is: "<<random_weight(gen)<<endl;
 	 beta += random_weight(gen);
