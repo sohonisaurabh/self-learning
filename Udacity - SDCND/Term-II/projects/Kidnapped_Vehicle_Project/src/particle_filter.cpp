@@ -19,7 +19,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
-	num_particles = 10;
+	num_particles = 100;
 	default_random_engine gen;
 	
 	normal_distribution<double> dist_x(x, std[0]);
@@ -36,6 +36,9 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	  current_particle.x = dist_x(gen);
 	  current_particle.y = dist_y(gen);
 	  current_particle.theta = dist_theta(gen);
+	  //current_particle.x = x;
+	  //current_particle.y = y;
+	  //current_particle.theta = theta;
 	  current_particle.weight = 1.0;
 	  
 	  particles.push_back(current_particle);
@@ -64,10 +67,11 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	  double pred_x;
 	  double pred_y;
 	  double pred_theta;
-	  
+	  //cout<<"Yaw rate is: "<<yaw_rate<<endl;
+	  //cout<<"Fabs of yaw rate is: "<<fabs(yaw_rate)<<endl;
 	  //Instead of a hard check of 0, adding a check for very low value
-	  if (fabs(yaw_rate < 0.0001)) {
-	    // cout<<"Yaw rate is zero, so entered IF"<<endl;
+	  if (fabs(yaw_rate) < 0.0001) {
+	     //cout<<"Yaw rate is zero, so entered IF"<<endl;
 	    pred_x = particle_x + velocity * cos(particle_theta);
 	    pred_y = particle_y + velocity * sin(particle_theta);
 	    pred_theta = particle_theta;
@@ -85,7 +89,10 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	  particles[i].x = dist_x(gen);
 	  particles[i].y = dist_y(gen);
 	  particles[i].theta = dist_theta(gen);
-	  // cout<<"Particle: "<<i+1<<" - "<<particles[i].x<<" "<<particles[i].y<<" "<<particles[i].theta<<endl;
+	  //particles[i].x = pred_x;
+	  //particles[i].y = pred_y;
+	  //particles[i].theta = pred_theta;
+	  // cout<<"Particle predicted: "<<" - "<<particles[i].x<<" "<<particles[i].y<<" "<<particles[i].theta<<endl;
 	}
 	
 
@@ -121,13 +128,14 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
         closest_landmark_id = pred_id;
       }
     }
+     // cout<<"Lowest distance is: "<<lowest_dist<<endl;
     observations[i].id = closest_landmark_id;
-    cout<<"Closest landmark ID is: "<<closest_landmark_id<<endl;
-    cout<<"Current Observation: "<<" - "<<obs_x<<" "<<obs_y<<" "<<endl;
+    // cout<<"Closest landmark ID is: "<<closest_landmark_id<<endl;
+    // cout<<"Current Observation: "<<" - "<<obs_x<<" "<<obs_y<<" "<<endl;
     for (int k = 0; k < predicted.size(); k++) {
       LandmarkObs current_pred = predicted[k];
       if (current_pred.id == closest_landmark_id) {
-        cout<<"Current Association: "<<" - "<<current_pred.x<<" "<<current_pred.y<<endl;
+        // cout<<"Current Association: "<<" - "<<current_pred.x<<" "<<current_pred.y<<endl;
       }
     }
   }  
@@ -148,6 +156,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   http://planning.cs.uiuc.edu/node99.html
   
   // cout<<"Transformed observations are as follows: "<<endl;
+  //return;
   int i, j;
   double weight_normalizer = 0.0;
   for (i = 0; i < num_particles; i++) {
@@ -208,7 +217,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
         double pred_landmark_x = predicted_landmarks[l].x;
         double pred_landmark_y = predicted_landmarks[l].y;
         double pred_landmark_id = predicted_landmarks[l].id;
-        // cout<<"Landmark ID is: "<<current_pred.id;
+        // cout<<"Association ID is: "<<trans_obs_id<<endl;
         
         if (trans_obs_id == pred_landmark_id) {
           multi_prob = normalizer * exp(-1.0 * ((pow((trans_obs_x - pred_landmark_x), 2)/(2.0 * sigma_x_2)) + (pow((trans_obs_y - pred_landmark_y), 2)/(2.0 * sigma_y_2))));
@@ -219,7 +228,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
             cout<<"Current pred x: "<<current_pred.x<<endl;
             cout<<"Current pred y: "<<current_pred.y<<endl;
           }*/
-          cout<<"Current prob is: "<<multi_prob<<endl;
+          // cout<<"Current prob is: "<<multi_prob<<endl;
           particles[i].weight *= multi_prob;
         }
       }
@@ -228,7 +237,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
     weight_normalizer += particles[i].weight;
     // cout<<"Weight is: "<<current_particle.weight<<endl;
   }
-   cout<<"Weight normalizer is: "<<weight_normalizer<<endl;
+   // cout<<"Weight normalizer is: "<<weight_normalizer<<endl;
   for (int i = 0; i < particles.size(); i++) {
     particles[i].weight /= weight_normalizer;
     weights[i] = particles[i].weight;
@@ -240,6 +249,7 @@ void ParticleFilter::resample() {
 	// NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
 	
+	//return;
 	vector<Particle> resampled_particles;
 	
 	// cout<<"Weights finally are: "<<endl;
