@@ -12,14 +12,12 @@
 
 using namespace std;
 
-using namespace std;
-
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// TODO: Set the number of particles. Initialize all particles to first position (based on estimates of 
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
-	num_particles = 100;
+	num_particles = 10;
 	default_random_engine gen;
 	
 	normal_distribution<double> dist_x(x, std[0]);
@@ -72,8 +70,8 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	  //Instead of a hard check of 0, adding a check for very low value
 	  if (fabs(yaw_rate) < 0.0001) {
 	     //cout<<"Yaw rate is zero, so entered IF"<<endl;
-	    pred_x = particle_x + velocity * cos(particle_theta);
-	    pred_y = particle_y + velocity * sin(particle_theta);
+	    pred_x = particle_x + velocity * cos(particle_theta) * delta_t;
+	    pred_y = particle_y + velocity * sin(particle_theta) * delta_t;
 	    pred_theta = particle_theta;
 	  } else {
 	  	// cout<<"Yaw rate is not zero, so entered ELSE"<<endl;
