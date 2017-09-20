@@ -18,6 +18,12 @@ public:
   double Kd;
 
   /*
+  * Twiddle
+  */
+  float tolerance;
+  std::vector<double> delta_p;
+
+  /*
   * Constructor
   */
   PID();
@@ -41,6 +47,16 @@ public:
   * Calculate the total PID error.
   */
   double TotalError();
+
+  /*
+  * Used to reset the simulator and bring the car back to first position.
+  */
+  void Restart(uWS::WebSocket<uWS::SERVER> ws);
+
+  /*
+  * Twiddle or vanilla gradient descent
+  */
+  void Twiddle(double total_error);
 };
 
 #endif /* PID_H */
