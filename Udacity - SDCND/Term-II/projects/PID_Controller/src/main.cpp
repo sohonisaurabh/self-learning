@@ -34,15 +34,15 @@ int main(int argC, char** argV)
 
   PID pid;
   // TODO: Initialize the pid variable.
-  // double Kp_initial = -0.2;
-  // double Ki_initial = 0;
-  // double Kd_initial = -0.8;
+  // double Kp_initial = -0.09;
+  // double Ki_initial = -0.0005;
+  // double Kd_initial = -1.7;
   // std::cout<<argV[1]<<std::endl;
   // std::cout<<"Kp is: "<<argV[1]<<"-----"<<std::endl;
   double Kp_initial = atof(argV[1]);
   // double Kp_initial = -0.065;
-  double Ki_initial = 0;
-  double Kd_initial = -0.5;
+  double Ki_initial = atof(argV[2]);
+  double Kd_initial = atof(argV[3]);
   //unsigned int timesteps = 0;
   pid.Init(Kp_initial, Ki_initial, Kd_initial);
 
@@ -87,7 +87,7 @@ int main(int argC, char** argV)
           } else {
             json msgJson;
             msgJson["steering_angle"] = steer_value;
-            msgJson["throttle"] = 0.3;
+            msgJson["throttle"] = 0.5;
             auto msg = "42[\"steer\"," + msgJson.dump() + "]";
             //std::cout << msg << std::endl;
             ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
@@ -100,7 +100,7 @@ int main(int argC, char** argV)
         ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
       }
       // std::cout<<"Timestep is: "<<timesteps<<std::endl;
-      timesteps++;
+      //timesteps++;
     }
   });
 
