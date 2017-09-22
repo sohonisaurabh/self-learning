@@ -33,18 +33,28 @@ int main(int argC, char** argV)
   uWS::Hub h;
 
   PID pid;
-  // TODO: Initialize the pid variable.
-  // double Kp_initial = -0.09;
-  // double Ki_initial = -0.0005;
-  // double Kd_initial = -1.7;
-  // std::cout<<argV[1]<<std::endl;
-  // std::cout<<"Kp is: "<<argV[1]<<"-----"<<std::endl;
-  double Kp_initial = atof(argV[1]);
-  // double Kp_initial = -0.065;
-  double Ki_initial = atof(argV[2]);
-  double Kd_initial = atof(argV[3]);
-  //unsigned int timesteps = 0;
-  pid.Init(Kp_initial, Ki_initial, Kd_initial);
+
+  bool run_twiddle = false;
+
+  if (argC.length > 1) {
+    string is_dynamic_init = argV[1];
+    string is_run_twiddle = argV[5];
+    if (is_dynamic_init.compare("dynamic-init") == 0) {
+      double Kp_initial = argV[2] ? atof(argV[2]) : -0.09;
+      double Ki_initial = argV[3] ? atof(argV[3]) : -0.0005;
+      double Kd_initial = argV[4] ? atof(argV[4]) : -1.7;
+    }
+    if (is_run_twiddle.compare("twiddle") == 0) {
+      unsigned int timesteps = 0;
+      run_twiddle = true;
+    }
+  } else {
+    double Kp_initial = -0.09;
+    double Ki_initial = -0.0005;
+    double Kd_initial = -1.7;
+  }
+  //Init PID with P, I and D constants
+  pid.Init(Kp_initial, Ki_initial, Kd_initial, run_twiddle);
 
   h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -64,43 +74,39 @@ int main(int argC, char** argV)
           double speed = std::stod(j[1]["speed"].get<std::string>());
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
           double steer_value;
-          /*
-          * TODO: Calcuate steering value here, remember the steering value is
-          * [-1, 1].
-          * NOTE: Feel free to play around with the throttle and speed. Maybe use
-          * another PID controller to control the speed!
-          */
+          
+          //Update the error in system using cte.
           pid.UpdateError(cte);
+          //Derive the steering angle in order to minimize the error (or cte).
           steer_value = pid.TotalError();
           
           // DEBUG
           //std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
           //std::cout << "Timestep: " << timesteps << std::endl;
-
-          if (timesteps > 500) {
-            std::cout << "Total error is: " << total_error << std::endl;
-            //pid.Twiddle(total_error);
-            std::cout << "Twiddle complete, Kp is: " << pid.Kp << std::endl;
-            //pid.Restart(ws);
-            //timesteps = 0;
-            total_error = 0.0;
-          } else {
-            json msgJson;
-            msgJson["steering_angle"] = steer_value;
-            msgJson["throttle"] = 0.5;
-            auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-            //std::cout << msg << std::endl;
-            ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-            total_error += pow(cte, 2);
+          if (run_twiddle) {
+            if (timesteps > 500) {
+              pid.Twiddle(total_error, Kp);
+              pid.Restart(ws);
+              timesteps = 0;
+              total_error = 0.0;
+              return;
+            } else {
+              total_error += pow(cte, 2);
+            }
+            timesteps++;
           }
+          json msgJson;
+          msgJson["steering_angle"] = steer_value;
+          msgJson["throttle"] = 0.5;
+          auto msg = "42[\"steer\"," + msgJson.dump() + "]";
+          //std::cout << msg << std::endl;
+          ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
         // Manual driving
         std::string msg = "42[\"manual\",{}]";
         ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
       }
-      // std::cout<<"Timestep is: "<<timesteps<<std::endl;
-      //timesteps++;
     }
   });
 

@@ -21,7 +21,7 @@ public:
   * Twiddle
   */
   float tolerance;
-  std::vector<double> delta_p;
+  double delta_p;
 
   /*
   * Constructor
@@ -36,7 +36,7 @@ public:
   /*
   * Initialize PID.
   */
-  void Init(double Kp, double Ki, double Kd);
+  void Init(double Kp, double Ki, double Kd, bool run_twiddle);
 
   /*
   * Update the PID error variables given cross track error.
@@ -54,9 +54,9 @@ public:
   void Restart(uWS::WebSocket<uWS::SERVER> ws);
 
   /*
-  * Twiddle or vanilla gradient descent
+  * Twiddle or vanilla gradient descent for tuning one hyper parameter at a time
   */
-  void Twiddle(double total_error);
+  void Twiddle(double total_error, double hyperparameter);
 };
 
 #endif /* PID_H */
