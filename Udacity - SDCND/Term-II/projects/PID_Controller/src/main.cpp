@@ -44,8 +44,8 @@ int main(int argC, char** argV)
     Kp_initial = atof(argV[1]);
     Ki_initial = atof(argV[2]);
     Kd_initial = atof(argV[3]);
-    if (argC > 5) {
-      std::string is_run_twiddle = argV[5];
+    if (argC > 4) {
+      std::string is_run_twiddle = argV[4];
       if (is_run_twiddle.compare("twiddle") == 0) {
         run_twiddle = true;
       }
@@ -87,7 +87,7 @@ int main(int argC, char** argV)
           //std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
           //std::cout << "Timestep: " << timesteps << std::endl;
           if (run_twiddle) {
-            if (timesteps > 10) {
+            if (timesteps > 500) {
               pid.Twiddle(total_error, pid.Kp);
               pid.Restart(ws);
               timesteps = 0;
@@ -110,7 +110,6 @@ int main(int argC, char** argV)
         std::string msg = "42[\"manual\",{}]";
         ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
       }
-      std::cout<<"Timestep are: "<<timesteps<<std::endl;
     }
   });
 
