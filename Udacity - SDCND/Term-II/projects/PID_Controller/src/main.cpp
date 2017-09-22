@@ -1,11 +1,15 @@
 #include <uWS/uWS.h>
 #include <iostream>
+#include <string>
 #include "json.hpp"
 #include "PID.h"
 #include <math.h>
 
 // for convenience
 using json = nlohmann::json;
+
+//Global variable
+bool run_twiddle = false;
 
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
@@ -34,33 +38,32 @@ int main(int argC, char** argV)
 
   PID pid;
 
-  bool run_twiddle = false;
+  double Kp_initial, Ki_initial, Kd_initial;
 
-  if (argC.length > 1) {
-    string is_dynamic_init = argV[1];
-    string is_run_twiddle = argV[5];
-    if (is_dynamic_init.compare("dynamic-init") == 0) {
-      double Kp_initial = argV[2] ? atof(argV[2]) : -0.09;
-      double Ki_initial = argV[3] ? atof(argV[3]) : -0.0005;
-      double Kd_initial = argV[4] ? atof(argV[4]) : -1.7;
-    }
-    if (is_run_twiddle.compare("twiddle") == 0) {
-      unsigned int timesteps = 0;
-      run_twiddle = true;
+  if (argC > 1) {
+    Kp_initial = atof(argV[1]);
+    Ki_initial = atof(argV[2]);
+    Kd_initial = atof(argV[3]);
+    if (argC > 5) {
+      std::string is_run_twiddle = argV[5];
+      if (is_run_twiddle.compare("twiddle") == 0) {
+        run_twiddle = true;
+      }
     }
   } else {
-    double Kp_initial = -0.09;
-    double Ki_initial = -0.0005;
-    double Kd_initial = -1.7;
+    Kp_initial = -0.09;
+    Ki_initial = -0.0005;
+    Kd_initial = -1.7;
   }
   //Init PID with P, I and D constants
+  std::cout<<"Kp is: "<<Kp_initial<<" Ki is: "<<Ki_initial<<" Kd is: "<<Kd_initial<<std::endl;
   pid.Init(Kp_initial, Ki_initial, Kd_initial, run_twiddle);
 
   h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
-    static int timesteps = 0;
+    static unsigned int timesteps = 0;
     static double total_error = 0.0;
     if (length && length > 2 && data[0] == '4' && data[1] == '2')
     {
@@ -84,8 +87,8 @@ int main(int argC, char** argV)
           //std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
           //std::cout << "Timestep: " << timesteps << std::endl;
           if (run_twiddle) {
-            if (timesteps > 500) {
-              pid.Twiddle(total_error, Kp);
+            if (timesteps > 10) {
+              pid.Twiddle(total_error, pid.Kp);
               pid.Restart(ws);
               timesteps = 0;
               total_error = 0.0;
@@ -107,6 +110,7 @@ int main(int argC, char** argV)
         std::string msg = "42[\"manual\",{}]";
         ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
       }
+      std::cout<<"Timestep are: "<<timesteps<<std::endl;
     }
   });
 
