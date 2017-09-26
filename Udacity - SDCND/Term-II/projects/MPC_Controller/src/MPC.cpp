@@ -21,6 +21,9 @@ double dt = 0;
 // This is the length from front to CoG that has a similar radius.
 const double Lf = 2.67;
 
+// TODO 1 - Set the reference parameters. ref_cte, ref_epsi and ref_velocity. Start with small
+//          velocity first, say 50.
+
 class FG_eval {
  public:
   // Fitted polynomial coefficients
@@ -33,6 +36,15 @@ class FG_eval {
     // `fg` a vector of the cost constraints, `vars` is a vector of variable values (state & actuators)
     // NOTE: You'll probably go back and forth between this function and
     // the Solver function below.
+    
+    // TODO 1 - Add cost functions and parameters here:
+    // i. Highest weight to reducing cte and epsi
+    // ii. High weight to change in actuator inputs
+    // iii. High weight to initial actuator inputs
+    // iv. Medium weight to maintain velocity. Check if this is possible
+    // 
+    
+    // TODO 2 - Setup the contraints, nothing but the update equations
   }
 };
 
@@ -66,6 +78,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   Dvector vars_lowerbound(n_vars);
   Dvector vars_upperbound(n_vars);
   // TODO: Set lower and upper limits for variables.
+  // Don't forget to include Lf in delta values if dividing by Lf in main while making the delta
+  // or steering angles to [-1, 1] and a values are in the range [-1, 1]
 
   // Lower and upper limits for the constraints
   // Should be 0 besides initial state.

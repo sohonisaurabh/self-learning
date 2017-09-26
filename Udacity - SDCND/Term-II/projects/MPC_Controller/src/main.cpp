@@ -92,6 +92,16 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
+          //TODO 1 - Shift the coordinates of ptsx and ptsy to origin of car
+          //TODO 2 - Rotate the coordinates of ptsx and ptsy to bring them w.r.t. psi of car
+          //TODO 3 - Polyfit accepts Eigen vector and ptsx and ptsy are std::vectors. Make this 
+          //          conversion
+          //TODO 4 - Calculate cte and epsi. cte is the horizontal line
+          //TODO 5 - Use polyfit to plot yellow line using way points
+          //TODO 6 - Use polyfit to plot green line using vars solved by MPC
+          //TODO 7 - Set the steering angle to delta and throttle to a for current time step
+          //          solved by MPC
+
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
