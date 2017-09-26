@@ -92,14 +92,34 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
-          //TODO 1 - Shift the coordinates of ptsx and ptsy to origin of car
-          //TODO 2 - Rotate the coordinates of ptsx and ptsy to bring them w.r.t. psi of car
-          //TODO 3 - Polyfit accepts Eigen vector and ptsx and ptsy are std::vectors. Make this 
+          // TODO 1 - Shift the coordinates of ptsx and ptsy to origin of car
+          // TODO 2 - Rotate the coordinates of ptsx and ptsy to bring them w.r.t. psi of car
+          // TODO 3 - Polyfit accepts Eigen vector and ptsx and ptsy are std::vectors. Make this 
           //          conversion
+          // Convert global coordinates to vehicle coordinates so that formula of cte and epsi is easy and involves less calculation
+          double xdiff = 0;
+          double ydiff = 0;
+          Eigen::VectorXd ptsx_vehicle(ptsx.size());
+          ptsx_vehicle.fill(0.0);
+          Eigen::VectorXd ptsy_vehicle(ptsy.size());
+          ptsy_vehicle.fill(0.0);
+          for (int i = 0; i < ptsx.size(); i++) {
+            xdiff = ptsx[i] - px;
+            ydiff = ptsy[i] - py;
+            
+            ptsx_vehicle[i] = xdiff * cos(-psi) - ydiff * sin(-psi);
+            ptsy_vehicle[i] = xdiff * sin(-psi) + ydiff * cos(-psi);
+            
+            std::cout<<"Transformed X is: "<<ptsx_vehicle[i]<<std::endl;
+            std::cout<<"Transformed Y is: "<<ptsy_vehicle[i]<<std::endl;
+          }
+          auto coeffs = polyfit(ptsx_vehicle, ptsy_vehicle, 3);
+         
           //TODO 4 - Calculate cte and epsi. cte is the horizontal line
-          //TODO 5 - Use polyfit to plot yellow line using way points
-          //TODO 6 - Use polyfit to plot green line using vars solved by MPC
-          //TODO 7 - Set the steering angle to delta and throttle to a for current time step
+          double cte = polyeval(coeffs, 0);
+          double epsi = -atan(coeffs[1]);
+          
+          //TODO 5 - Set the steering angle to delta and throttle to a for current time step
           //          solved by MPC
 
           /*
@@ -116,10 +136,13 @@ int main() {
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
-
+          
+          //TODO 6 - Use polyfit to plot green line using vars solved by MPC
           //Display the MPC predicted trajectory 
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
+          
+          
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
@@ -127,9 +150,15 @@ int main() {
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
 
+          // TODO 7 - Use polyfit to plot yellow line using way points
           //Display the waypoints/reference line
           vector<double> next_x_vals;
           vector<double> next_y_vals;
+          
+          for (int i = 0; i < ptsx_vehicle.size(); i++) {
+            next_x_vals.push_back(ptsx_vehicle[i]);
+            next_y_vals.push_back(ptsy_vehicle[i]);
+          }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
@@ -139,7 +168,7 @@ int main() {
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.
