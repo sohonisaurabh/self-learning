@@ -192,10 +192,10 @@ class FG_eval {
       fg[1 + y_start + t] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
       fg[1 + psi_start + t] = psi1 - (psi0 + (v0/Lf) * delta0 * dt);
       fg[1 + v_start + t] = v1 - (v0 + a0 * dt);
-      fg[1 + cte_start + t] = cte1 - (cte0 + v0 * CppAD::sin(psi0) * dt);
-      fg[1 + epsi_start + t] = epsi1 - (epsi0 + (v0/Lf) * delta0 * dt);
-      //fg[1 + cte_start + t] = cte1 - ((f0_test - y0) + (v0 * CppAD::sin(epsi0) * dt));
-      //fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
+      // fg[1 + cte_start + t] = cte1 - (cte0 + v0 * CppAD::sin(psi0) * dt);
+      // fg[1 + epsi_start + t] = epsi1 - (epsi0 + (v0/Lf) * delta0 * dt);
+      fg[1 + cte_start + t] = cte1 - ((f0_test - y0) + (v0 * CppAD::sin(epsi0) * dt));
+      fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
     }
   }
 };
@@ -352,8 +352,8 @@ int main() {
     xdiff = ptsx[i] - x;
     ydiff = ptsy[i] - y;
     
-    ptsx_vehicle[i] = x * cos(-psi) - y * sin(-psi);
-    ptsy_vehicle[i] = x * sin(-psi) + y * cos(-psi);
+    ptsx_vehicle[i] = xdiff * cos(-psi) - ydiff * sin(-psi);
+    ptsy_vehicle[i] = xdiff * sin(-psi) + ydiff * cos(-psi);
     
   }
   auto coeffs = polyfit(ptsx_vehicle, ptsy_vehicle, 1);

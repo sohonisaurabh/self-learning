@@ -103,44 +103,62 @@ int main() {
           ptsx_vehicle.fill(0.0);
           Eigen::VectorXd ptsy_vehicle(ptsy.size());
           ptsy_vehicle.fill(0.0);
-          for (int i = 0; i < ptsx.size(); i++) {
+          for (unsigned int i = 0; i < ptsx.size(); i++) {
             xdiff = ptsx[i] - px;
             ydiff = ptsy[i] - py;
             
             ptsx_vehicle[i] = xdiff * cos(-psi) - ydiff * sin(-psi);
             ptsy_vehicle[i] = xdiff * sin(-psi) + ydiff * cos(-psi);
             
-            std::cout<<"Transformed X is: "<<ptsx_vehicle[i]<<std::endl;
-            std::cout<<"Transformed Y is: "<<ptsy_vehicle[i]<<std::endl;
+            // std::cout<<"Transformed X is: "<<ptsx_vehicle[i]<<std::endl;
+            // std::cout<<"Transformed Y is: "<<ptsy_vehicle[i]<<std::endl;
           }
           auto coeffs = polyfit(ptsx_vehicle, ptsy_vehicle, 3);
          
           //TODO 4 - Calculate cte and epsi. cte is the horizontal line
           double cte = polyeval(coeffs, 0);
           double epsi = -atan(coeffs[1]);
-          
-          //TODO 5 - Set the steering angle to delta and throttle to a for current time step
-          //          solved by MPC
 
+          //TODO 5 - Create the state
+          Eigen::VectorXd state(6);
+          state << 0, 0, 0, v, cte, epsi;
+          
+          //TODO 6 - Set the steering angle to delta and throttle to a for current time step
+          //          solved by MPC
+          // std::cout<<"Called MPC solve from main!"<<std::endl;
+          std::vector<double> solution = mpc.Solve(state, coeffs);
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
+          double steer_value = solution[0]/deg2rad(25);
+          // double throttle_value = 0.1;
+          double throttle_value = solution[1];
+
+          std::cout<<"Steer value before conv is: "<<solution[0]<<std::endl;
+          std::cout<<"Steer value after conv is: "<<steer_value<<std::endl;
+          // std::cout<<"Throttle value is: "<<throttle_value<<std::endl;
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value;
+          msgJson["steering_angle"] = -1.0 * steer_value;
           msgJson["throttle"] = throttle_value;
           
-          //TODO 6 - Use polyfit to plot green line using vars solved by MPC
+          //TODO 7 - Use polyfit to plot green line using vars solved by MPC
           //Display the MPC predicted trajectory 
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
+
+          for (unsigned int i = 2; i < solution.size(); i++) {
+            if (i % 2 == 0) {
+              mpc_x_vals.push_back(solution[i]);
+            } else {
+              mpc_y_vals.push_back(solution[i]);
+            }
+          }
           
           
 
@@ -150,7 +168,7 @@ int main() {
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
 
-          // TODO 7 - Use polyfit to plot yellow line using way points
+          // TODO 8 - Use polyfit to plot yellow line using way points
           //Display the waypoints/reference line
           vector<double> next_x_vals;
           vector<double> next_y_vals;
@@ -178,7 +196,8 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds(100));
+          //this_thread::sleep_for(chrono::milliseconds(100));
+          this_thread::sleep_for(chrono::milliseconds(0));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
