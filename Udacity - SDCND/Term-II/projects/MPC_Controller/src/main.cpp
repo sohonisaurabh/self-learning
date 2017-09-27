@@ -91,6 +91,15 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+          double delta = j[1]["steering_angle"];
+          double acceleration = j[1]["throttle"];
+
+          double time_lapse = 0.1;
+          double px_next = px + (v * cos(psi) * time_lapse);
+          double py_next = py + (v * sin(psi) * time_lapse);
+          // double psi_next = psi + ((v * delta)/(2.67 * time_lapse));
+          double psi_next = psi;
+          double v_next = v + (acceleration * time_lapse);
 
           // TODO 1 - Shift the coordinates of ptsx and ptsy to origin of car
           // TODO 2 - Rotate the coordinates of ptsx and ptsy to bring them w.r.t. psi of car
@@ -104,14 +113,14 @@ int main() {
           Eigen::VectorXd ptsy_vehicle(ptsy.size());
           ptsy_vehicle.fill(0.0);
           for (unsigned int i = 0; i < ptsx.size(); i++) {
-            xdiff = ptsx[i] - px;
-            ydiff = ptsy[i] - py;
+            xdiff = ptsx[i] - px_next;
+            ydiff = ptsy[i] - py_next;
             
-            ptsx_vehicle[i] = xdiff * cos(-psi) - ydiff * sin(-psi);
-            ptsy_vehicle[i] = xdiff * sin(-psi) + ydiff * cos(-psi);
+            ptsx_vehicle[i] = xdiff * cos(-psi_next) - ydiff * sin(-psi_next);
+            ptsy_vehicle[i] = xdiff * sin(-psi_next) + ydiff * cos(-psi_next);
             
-            // std::cout<<"Transformed X is: "<<ptsx_vehicle[i]<<std::endl;
-            // std::cout<<"Transformed Y is: "<<ptsy_vehicle[i]<<std::endl;
+            std::cout<<"Transformed X is: "<<ptsx_vehicle[i]<<std::endl;
+            std::cout<<"Transformed Y is: "<<ptsy_vehicle[i]<<std::endl;
           }
           auto coeffs = polyfit(ptsx_vehicle, ptsy_vehicle, 3);
          
@@ -121,12 +130,12 @@ int main() {
 
           //TODO 5 - Create the state
           Eigen::VectorXd state(6);
-          state << 0, 0, 0, v, cte, epsi;
+          state << 0, 0, 0, v_next, cte, epsi;
           
           //TODO 6 - Set the steering angle to delta and throttle to a for current time step
           //          solved by MPC
-          // std::cout<<"Called MPC solve from main!"<<std::endl;
-          std::vector<double> solution = mpc.Solve(state, coeffs);
+          std::vector<double> solution;
+          solution = mpc.Solve(state, coeffs);
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
@@ -134,12 +143,9 @@ int main() {
           *
           */
           double steer_value = solution[0]/deg2rad(25);
-          // double throttle_value = 0.1;
           double throttle_value = solution[1];
-
-          std::cout<<"Steer value before conv is: "<<solution[0]<<std::endl;
-          std::cout<<"Steer value after conv is: "<<steer_value<<std::endl;
-          // std::cout<<"Throttle value is: "<<throttle_value<<std::endl;
+          // double steer_value;
+          // double throttle_value;
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -196,8 +202,8 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          //this_thread::sleep_for(chrono::milliseconds(100));
-          this_thread::sleep_for(chrono::milliseconds(0));
+          this_thread::sleep_for(chrono::milliseconds(100));
+          // this_thread::sleep_for(chrono::milliseconds(0));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
