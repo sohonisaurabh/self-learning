@@ -97,8 +97,8 @@ int main() {
           double time_lapse = 0.1;
           double px_next = px + (v * cos(psi) * time_lapse);
           double py_next = py + (v * sin(psi) * time_lapse);
-          // double psi_next = psi + ((v * delta)/(2.67 * time_lapse));
-          double psi_next = psi;
+          double psi_next = psi - ((v * delta * time_lapse)/2.67);
+          // double psi_next = psi;
           double v_next = v + (acceleration * time_lapse);
 
           // TODO 1 - Shift the coordinates of ptsx and ptsy to origin of car
@@ -113,14 +113,20 @@ int main() {
           Eigen::VectorXd ptsy_vehicle(ptsy.size());
           ptsy_vehicle.fill(0.0);
           for (unsigned int i = 0; i < ptsx.size(); i++) {
-            xdiff = ptsx[i] - px_next;
-            ydiff = ptsy[i] - py_next;
+            // xdiff = ptsx[i] - px_next;
+            // ydiff = ptsy[i] - py_next;
+
+            xdiff = ptsx[i] - px;
+            ydiff = ptsy[i] - py;
             
-            ptsx_vehicle[i] = xdiff * cos(-psi_next) - ydiff * sin(-psi_next);
-            ptsy_vehicle[i] = xdiff * sin(-psi_next) + ydiff * cos(-psi_next);
+            // ptsx_vehicle[i] = xdiff * cos(-psi_next) - ydiff * sin(-psi_next);
+            // ptsy_vehicle[i] = xdiff * sin(-psi_next) + ydiff * cos(-psi_next);
+
+            ptsx_vehicle[i] = xdiff * cos(-psi) - ydiff * sin(-psi);
+            ptsy_vehicle[i] = xdiff * sin(-psi) + ydiff * cos(-psi);
             
-            std::cout<<"Transformed X is: "<<ptsx_vehicle[i]<<std::endl;
-            std::cout<<"Transformed Y is: "<<ptsy_vehicle[i]<<std::endl;
+            // std::cout<<"Transformed X is: "<<ptsx_vehicle[i]<<std::endl;
+            // std::cout<<"Transformed Y is: "<<ptsy_vehicle[i]<<std::endl;
           }
           auto coeffs = polyfit(ptsx_vehicle, ptsy_vehicle, 3);
          
@@ -130,7 +136,8 @@ int main() {
 
           //TODO 5 - Create the state
           Eigen::VectorXd state(6);
-          state << 0, 0, 0, v_next, cte, epsi;
+          // state << 0, 0, 0, v_next, cte, epsi;
+          state << 0, 0, 0, v, cte, epsi;
           
           //TODO 6 - Set the steering angle to delta and throttle to a for current time step
           //          solved by MPC
@@ -202,7 +209,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          this_thread::sleep_for(chrono::milliseconds(100));
+          // this_thread::sleep_for(chrono::milliseconds(100));
           // this_thread::sleep_for(chrono::milliseconds(0));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }

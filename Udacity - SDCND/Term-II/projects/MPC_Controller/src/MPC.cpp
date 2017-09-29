@@ -26,7 +26,7 @@ const double Lf = 2.67;
 
 double ref_cte = 0;
 double ref_epsi = 0;
-double ref_v = 25;
+double ref_v = 100;
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
@@ -62,8 +62,8 @@ class FG_eval {
     // i. Highest weight to reducing cte and epsi
     unsigned int t;
     for (t = 0; t < N; t++) {
-      fg[0] += 500*CppAD::pow(vars[t + cte_start], 2);
-      fg[0] += 500*CppAD::pow(vars[t + epsi_start], 2);
+      fg[0] += 2000*CppAD::pow(vars[t + cte_start], 2);
+      fg[0] += 2000*CppAD::pow(vars[t + epsi_start], 2);
       fg[0] += 10*CppAD::pow(vars[v_start + t] - ref_v, 2);
 
       // fg[0] += CppAD::pow(vars[t + cte_start], 2);
@@ -74,16 +74,17 @@ class FG_eval {
     //Add initial a and delta values to the cost calculation
     for (t = 0; t < N - 1; t++) {
       fg[0] += 100*CppAD::pow(vars[t + delta_start], 2);
-      fg[0] += 100*CppAD::pow(vars[t + a_start], 2);
-      
+      fg[0] += 10*CppAD::pow(vars[t + a_start], 2);
+      fg[0] += 500*CppAD::pow((vars[t + v_start] * vars[t + delta_start]), 2);
+
       // fg[0] += CppAD::pow(vars[t + delta_start], 2);
       // fg[0] += CppAD::pow(vars[t + a_start], 2);
     }
 
     // Minimize the value gap between sequential actuations.
     for (t = 0; t < N - 2; t++) {
-      fg[0] += 100*CppAD::pow(vars[t + 1 + delta_start] - vars[t + delta_start], 2);
-      fg[0] += 10*CppAD::pow(vars[t + 1 + a_start] - vars[t + a_start], 2);
+      fg[0] += 50*CppAD::pow(vars[t + 1 + delta_start] - vars[t + delta_start], 2);
+      fg[0] += 50*CppAD::pow(vars[t + 1 + a_start] - vars[t + a_start], 2);
       
       // fg[0] += 100*CppAD::pow(vars[t + 1 + delta_start] - vars[t + delta_start], 2);
       // fg[0] += 100*CppAD::pow(vars[t + 1 + a_start] - vars[t + a_start], 2);
