@@ -77,7 +77,7 @@ int main() {
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
     string sdata = string(data).substr(0, length);
-    cout << sdata << endl;
+    // cout << sdata << endl;
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
       string s = hasData(sdata);
       if (s != "") {
@@ -113,17 +113,17 @@ int main() {
           Eigen::VectorXd ptsy_vehicle(ptsy.size());
           ptsy_vehicle.fill(0.0);
           for (unsigned int i = 0; i < ptsx.size(); i++) {
-            // xdiff = ptsx[i] - px_next;
-            // ydiff = ptsy[i] - py_next;
+            xdiff = ptsx[i] - px_next;
+            ydiff = ptsy[i] - py_next;
 
-            xdiff = ptsx[i] - px;
-            ydiff = ptsy[i] - py;
+            // xdiff = ptsx[i] - px;
+            // ydiff = ptsy[i] - py;
             
-            // ptsx_vehicle[i] = xdiff * cos(-psi_next) - ydiff * sin(-psi_next);
-            // ptsy_vehicle[i] = xdiff * sin(-psi_next) + ydiff * cos(-psi_next);
+            ptsx_vehicle[i] = xdiff * cos(-psi_next) - ydiff * sin(-psi_next);
+            ptsy_vehicle[i] = xdiff * sin(-psi_next) + ydiff * cos(-psi_next);
 
-            ptsx_vehicle[i] = xdiff * cos(-psi) - ydiff * sin(-psi);
-            ptsy_vehicle[i] = xdiff * sin(-psi) + ydiff * cos(-psi);
+            // ptsx_vehicle[i] = xdiff * cos(-psi) - ydiff * sin(-psi);
+            // ptsy_vehicle[i] = xdiff * sin(-psi) + ydiff * cos(-psi);
             
             // std::cout<<"Transformed X is: "<<ptsx_vehicle[i]<<std::endl;
             // std::cout<<"Transformed Y is: "<<ptsy_vehicle[i]<<std::endl;
@@ -136,8 +136,8 @@ int main() {
 
           //TODO 5 - Create the state
           Eigen::VectorXd state(6);
-          // state << 0, 0, 0, v_next, cte, epsi;
-          state << 0, 0, 0, v, cte, epsi;
+          state << 0, 0, 0, v_next, cte, epsi;
+          // state << 0, 0, 0, v, cte, epsi;
           
           //TODO 6 - Set the steering angle to delta and throttle to a for current time step
           //          solved by MPC
@@ -209,7 +209,7 @@ int main() {
           //
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
-          // this_thread::sleep_for(chrono::milliseconds(100));
+          this_thread::sleep_for(chrono::milliseconds(100));
           // this_thread::sleep_for(chrono::milliseconds(0));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }

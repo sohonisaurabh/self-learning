@@ -46,7 +46,7 @@ class FG_eval {
   Eigen::VectorXd coeffs;
   FG_eval(Eigen::VectorXd coeffs) {
     this->coeffs = coeffs;
-    std::cout<<"FG eval is complete!"<<std::endl;
+    // std::cout<<"FG eval is complete!"<<std::endl;
   }
 
   typedef CPPAD_TESTVECTOR(AD<double>) ADvector;
