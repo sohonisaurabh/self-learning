@@ -11,6 +11,7 @@
 
 // for convenience
 using json = nlohmann::json;
+bool start_controller = true;
 
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
@@ -65,7 +66,15 @@ Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
   return result;
 }
 
-int main() {
+int main(int argC, char** argV) {
+  if (argC > 1) {
+    std::string controller_command = argV[1];
+    if (controller_command.compare("controller-off") == 0) {
+      start_controller = false;
+    } else {
+      start_controller = true;
+    }
+  }
   uWS::Hub h;
 
   // MPC is initialized here!
@@ -142,22 +151,26 @@ int main() {
           //TODO 6 - Set the steering angle to delta and throttle to a for current time step
           //          solved by MPC
           std::vector<double> solution;
-          solution = mpc.Solve(state, coeffs);
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
-          double steer_value = solution[0]/deg2rad(25);
-          double throttle_value = solution[1];
+          double steer_value;
+          double throttle_value;
+          if (start_controller) {
+            solution = mpc.Solve(state, coeffs);
+            steer_value = -1.0 * solution[0]/deg2rad(25);
+            throttle_value = solution[1];
+          }
           // double steer_value;
           // double throttle_value;
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = -1.0 * steer_value;
+          msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
           
           //TODO 7 - Use polyfit to plot green line using vars solved by MPC
