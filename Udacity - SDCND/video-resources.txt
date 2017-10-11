@@ -15,3 +15,34 @@ https://www.youtube.com/playlist?list=PLAwxTw4SYaPkz3HerxrHlu1Seq8ZA7-5P
 Project walkthrough Term-II:
 
 https://www.youtube.com/playlist?list=PLAwxTw4SYaPnfR7TzRZN-uxlxGbqxhtm2
+
+
+Algorithm archives:
+
+1. Probabilty prediction and update:
+
+https://youtu.be/n1EacrqyCs8
+
+2. Particle filter resampling wheel idea and algorithm
+
+https://youtu.be/wNQVo6uOgYA
+
+3. Path planning - First search algorithm
+
+https://youtu.be/TPIFP4E7DVo
+
+4. Path planning - A star
+
+https://youtu.be/lxCCtgHk5Vs
+
+5. Path planning - A star demo
+
+https://youtu.be/qXZt-B7iUyw
+
+6. Path planning - Dynamic programming idea
+
+https://youtu.be/r2bPY2s9wII
+
+7. Twiddle/Vanilla Gradient descent
+
+https://youtu.be/2uQ2BSzDvXs
