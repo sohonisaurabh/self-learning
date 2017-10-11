@@ -43,6 +43,15 @@ https://youtu.be/qXZt-B7iUyw
 
 https://youtu.be/r2bPY2s9wII
 
-7. Twiddle/Vanilla Gradient descent
+7. Dynamic segmented cte
+
+https://youtu.be/fJL47oJVQN4
+
+8. Twiddle/Vanilla Gradient descent
 
 https://youtu.be/2uQ2BSzDvXs
+
+
+9. Graph slam algorithm
+
+https://youtu.be/nLEbJZFm5-E
