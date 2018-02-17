@@ -213,12 +213,12 @@ int main() {
 
       if (s != "") {
         auto j = json::parse(s);
-        
+
         string event = j[0].get<string>();
-        
+
         if (event == "telemetry") {
           // j[1] is the data JSON object
-          
+
         	// Main car's localization Data
           	double car_x = j[1]["x"];
           	double car_y = j[1]["y"];
@@ -230,7 +230,7 @@ int main() {
           	// Previous path data given to the Planner
           	auto previous_path_x = j[1]["previous_path_x"];
           	auto previous_path_y = j[1]["previous_path_y"];
-          	// Previous path's end s and d values 
+          	// Previous path's end s and d values
           	double end_path_s = j[1]["end_path_s"];
           	double end_path_d = j[1]["end_path_d"];
 
@@ -242,8 +242,28 @@ int main() {
           	vector<double> next_x_vals;
           	vector<double> next_y_vals;
 
+            int lane_id = 1;
+            // Width of lane in meters
+            int lane_width = 4;
+            double new_s = car_s;
+            double new_d = (lane_id * lane_width) + (lane_width/2);
+            std::vector<double> xy;
+
 
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
+            //start
+            double dist_inc = 0.42;
+            for(int i = 0; i < 50; i++) {
+              new_s += dist_inc;
+              xy = getXY(new_s, new_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+
+
+              next_x_vals.push_back(xy[0]);
+              next_y_vals.push_back(xy[1]);
+              // next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
+              // next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
+            }
+            //end
           	msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
 
@@ -251,7 +271,7 @@ int main() {
 
           	//this_thread::sleep_for(chrono::milliseconds(1000));
           	ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-          
+
         }
       } else {
         // Manual driving
