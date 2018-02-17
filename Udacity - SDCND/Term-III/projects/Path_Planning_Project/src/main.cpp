@@ -8,6 +8,7 @@
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
+#include "spline.h"
 
 using namespace std;
 
@@ -245,25 +246,78 @@ int main() {
             int lane_id = 1;
             // Width of lane in meters
             int lane_width = 4;
-            double new_s = car_s;
-            double new_d = (lane_id * lane_width) + (lane_width/2);
-            std::vector<double> xy;
 
 
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
             //start
             double dist_inc = 0.42;
-            for(int i = 0; i < 50; i++) {
-              new_s += dist_inc;
-              xy = getXY(new_s, new_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            int no_of_points = 100;
+            double look_ahead_distance = 30.0;
+            double car_yaw_rad = deg2rad(car_yaw);
+
+            std::vector<double> anchor_x;
+            std::vector<double> anchor_y;
+
+            //Car's current coordinates
+            anchor_x.push_back(car_x);
+            anchor_y.push_back(car_y);
+
+            for (int i = 1; i <= 2; i++) {
+              //Looking ahead at look_ahead_distance meters
+              double look_ahead_s = car_s + (look_ahead_distance * i);
+              //Lookahead d is same as current d as we are trying to stay in same lane
+              double look_ahead_d = car_d;
+              //double look_ahead_d = (lane_id * lane_width) + (lane_width/2);
+              std::vector<double> xy = getXY(look_ahead_s, look_ahead_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+
+              //Lookahead point for spline
+              anchor_x.push_back(xy[0]);
+              anchor_y.push_back(xy[1]);
+            }
+
+            //Convert anchor points from global coordinates to car's local coordinate
+            for (int i = 0; i < anchor_x.size(); i++) {
+              std::cout << "Anchor x is: " << anchor_x[i]<<'\n';
+              std::cout << "Anchor y is: " << anchor_y[i]<<'\n';
+              //Taking reference as car's current position.
+              double shift_x = anchor_x[i] - car_x;
+              double shift_y = anchor_y[i] - car_y;
+              double current_local_x = 0;
+              double current_local_y = 0;
+
+              if (i != 0) {
+
+                current_local_x = shift_x * cos(-car_yaw_rad) - shift_y * sin(-car_yaw_rad);
+                current_local_y = shift_x * sin(-car_yaw_rad) + shift_y * cos(-car_yaw_rad);
+              }
 
 
-              next_x_vals.push_back(xy[0]);
-              next_y_vals.push_back(xy[1]);
+              anchor_x[i] = current_local_x;
+              anchor_y[i] = current_local_y;
+              std::cout << "Anchor local x is: " << anchor_x[i]<<'\n';
+              std::cout << "Anchor local y is: " << anchor_y[i]<<'\n';
+            }
+
+            tk::spline sp;
+            sp.set_points(anchor_x, anchor_y);
+
+            std::cout << "Current car x is: " << car_x<<'\n';
+            std::cout << "Current car y is: " << car_y<<'\n';
+            for(int i = 1; i <= no_of_points; i++) {
+              double next_car_x = i * (look_ahead_distance/no_of_points);
+              double next_car_y = sp(next_car_x);
+
+              double next_global_x = car_x + (next_car_x * cos(car_yaw_rad)) - (next_car_y * sin(car_yaw_rad));
+              double next_global_y = car_y + (next_car_x * sin(car_yaw_rad)) + (next_car_y * cos(car_yaw_rad));
+              std::cout << "Next x is: " << next_global_x<<'\n';
+              std::cout << "Next y is: " << next_global_y<<'\n';
+              next_x_vals.push_back(next_global_x);
+              next_y_vals.push_back(next_global_y);
               // next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
               // next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
             }
             //end
+            std::cout << "Complete======================" <<'\n';
           	msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
 
