@@ -251,49 +251,84 @@ int main() {
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
             //start
             double dist_inc = 0.42;
-            int no_of_points = 100;
+            int no_of_points = 80;
             double look_ahead_distance = 30.0;
             double car_yaw_rad = deg2rad(car_yaw);
+            std::vector<double> prev_car_frenet;
 
+            std::vector<double> tmp_anchor_x;
+            std::vector<double> tmp_anchor_y;
             std::vector<double> anchor_x;
             std::vector<double> anchor_y;
 
-            //Car's current coordinates
-            anchor_x.push_back(car_x);
-            anchor_y.push_back(car_y);
+            double prev_car_x;
+            double prev_car_y;
+
+            if (previous_path_x.size() > 0 && previous_path_x.size() > 2) {
+              std::cout << "Got some points from previous path" << '\n';
+              // prev_car_x = previous_path_x[previous_path_x.size() - 2];
+              // prev_car_y = previous_path_y[previous_path_y.size() - 2];
+              // tmp_anchor_x.push_back(prev_car_x);
+              // tmp_anchor_y.push_back(prev_car_y);
+
+              prev_car_x = previous_path_x[previous_path_x.size() - 1];
+              prev_car_y = previous_path_y[previous_path_y.size() - 1];
+              tmp_anchor_x.push_back(prev_car_x);
+              tmp_anchor_y.push_back(prev_car_y);
+              // car_yaw_rad = atan2(tmp_anchor_y[1] - tmp_anchor_y[0], tmp_anchor_x[1] - tmp_anchor_x[0]);
+              prev_car_frenet = getFrenet(tmp_anchor_x[0], tmp_anchor_y[0], car_yaw_rad, map_waypoints_x, map_waypoints_y);
+            } else {
+              std::cout << "No points from previous path" << '\n';
+              //One point back in time
+              // prev_car_x = car_x - cos(car_yaw);
+              // prev_car_y = car_y - sin(car_yaw);
+              // std::cout << "Prev x is: " <<prev_car_x<< '\n';
+              // std::cout << "Prev y is: " <<prev_car_y<< '\n';
+              // tmp_anchor_x.push_back(prev_car_x);
+              // tmp_anchor_y.push_back(prev_car_y - 1);
+              // std::cout << "Car x is: " <<car_x<< '\n';
+              // std::cout << "Car y is: " <<car_y<< '\n';
+              //Car's current coordinates
+              tmp_anchor_x.push_back(car_x);
+              tmp_anchor_y.push_back(car_y);
+              // car_yaw_rad = atan2(tmp_anchor_y[1] - tmp_anchor_y[0], tmp_anchor_x[1] - tmp_anchor_x[0]);
+              // prev_car_frenet = getFrenet(tmp_anchor_x[0], tmp_anchor_y[0], car_yaw_rad, map_waypoints_x, map_waypoints_y);
+            }
 
             for (int i = 1; i <= 2; i++) {
+              double look_ahead_s;
               //Looking ahead at look_ahead_distance meters
-              double look_ahead_s = car_s + (look_ahead_distance * i);
+              if (prev_car_frenet.size() > 0) {
+                  look_ahead_s = prev_car_frenet[0] + (look_ahead_distance * i);
+              } else {
+                  look_ahead_s = car_s + (look_ahead_distance * i);
+              }
               //Lookahead d is same as current d as we are trying to stay in same lane
-              double look_ahead_d = car_d;
-              //double look_ahead_d = (lane_id * lane_width) + (lane_width/2);
+              // double look_ahead_d = car_d;
+              double look_ahead_d = (lane_id * lane_width) + (lane_width/2);
               std::vector<double> xy = getXY(look_ahead_s, look_ahead_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
 
               //Lookahead point for spline
-              anchor_x.push_back(xy[0]);
-              anchor_y.push_back(xy[1]);
+              tmp_anchor_x.push_back(xy[0]);
+              tmp_anchor_y.push_back(xy[1]);
             }
 
             //Convert anchor points from global coordinates to car's local coordinate
-            for (int i = 0; i < anchor_x.size(); i++) {
-              std::cout << "Anchor x is: " << anchor_x[i]<<'\n';
-              std::cout << "Anchor y is: " << anchor_y[i]<<'\n';
+            for (int i = 0; i < tmp_anchor_x.size(); i++) {
+              // std::cout << "Anchor x is: " << tmp_anchor_x[i]<<'\n';
+              // std::cout << "Anchor y is: " << anchor_y[i]<<'\n';
               //Taking reference as car's current position.
-              double shift_x = anchor_x[i] - car_x;
-              double shift_y = anchor_y[i] - car_y;
+              double shift_x = tmp_anchor_x[i] - tmp_anchor_x[0];
+              double shift_y = tmp_anchor_y[i] - tmp_anchor_y[0];
               double current_local_x = 0;
               double current_local_y = 0;
 
-              if (i != 0) {
-
-                current_local_x = shift_x * cos(-car_yaw_rad) - shift_y * sin(-car_yaw_rad);
-                current_local_y = shift_x * sin(-car_yaw_rad) + shift_y * cos(-car_yaw_rad);
-              }
+              current_local_x = shift_x * cos(-car_yaw_rad) - shift_y * sin(-car_yaw_rad);
+              current_local_y = shift_x * sin(-car_yaw_rad) + shift_y * cos(-car_yaw_rad);
 
 
-              anchor_x[i] = current_local_x;
-              anchor_y[i] = current_local_y;
+              anchor_x.push_back(current_local_x);
+              anchor_y.push_back(current_local_y);
               std::cout << "Anchor local x is: " << anchor_x[i]<<'\n';
               std::cout << "Anchor local y is: " << anchor_y[i]<<'\n';
             }
@@ -301,23 +336,23 @@ int main() {
             tk::spline sp;
             sp.set_points(anchor_x, anchor_y);
 
-            std::cout << "Current car x is: " << car_x<<'\n';
-            std::cout << "Current car y is: " << car_y<<'\n';
+            // std::cout << "Current car x is: " << car_x<<'\n';
+            // std::cout << "Current car y is: " << car_y<<'\n';
             for(int i = 1; i <= no_of_points; i++) {
               double next_car_x = i * (look_ahead_distance/no_of_points);
               double next_car_y = sp(next_car_x);
 
               double next_global_x = car_x + (next_car_x * cos(car_yaw_rad)) - (next_car_y * sin(car_yaw_rad));
               double next_global_y = car_y + (next_car_x * sin(car_yaw_rad)) + (next_car_y * cos(car_yaw_rad));
-              std::cout << "Next x is: " << next_global_x<<'\n';
-              std::cout << "Next y is: " << next_global_y<<'\n';
+              // std::cout << "Next x is: " << next_global_x<<'\n';
+              // std::cout << "Next y is: " << next_global_y<<'\n';
               next_x_vals.push_back(next_global_x);
               next_y_vals.push_back(next_global_y);
               // next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
               // next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
             }
             //end
-            std::cout << "Complete======================" <<'\n';
+            // std::cout << "Complete======================" <<'\n';
           	msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
 
