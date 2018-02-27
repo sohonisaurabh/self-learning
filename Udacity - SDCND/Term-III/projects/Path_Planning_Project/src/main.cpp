@@ -255,15 +255,15 @@ int main() {
             //start
 
             double velocity_mph_to_ms_conv = 1609.344 / 3600;
-            double speed_limit = 45 * velocity_mph_to_ms_conv;
-            double intended_velocity = speed_limit;
+            double safe_speed_limit = 45;
+            double intended_velocity = safe_speed_limit;
 
-            // if (car_speed < speed_limit) {
-            //   std::cout << "Car speed is :" << car_speed << '\n';
-            //   intended_velocity = car_speed;
-            // } else {
-            //   intended_velocity = car_speed;
-            // }
+            if (car_speed < safe_speed_limit) {
+              std::cout << "Car speed is :" << car_speed << '\n';
+              intended_velocity = (car_speed + 2) * velocity_mph_to_ms_conv;
+            } else {
+              intended_velocity = safe_speed_limit * velocity_mph_to_ms_conv;
+            }
 
             //Anchor points for spline in global coordinates
             std::vector<double> anchor_x;
@@ -306,7 +306,7 @@ int main() {
 
             //Step 2 - Set lookahead distance and anchors
             double lookahead_weight = 30; //This is 30 meters
-            int num_lookahead_steps = 3;
+            int num_lookahead_steps = 2;
 
             //Step 3 - Use car's frenet coordinates to get lookahead frenets and convert them to global
             double tmp_lookahead_s = 0.0;
@@ -366,14 +366,14 @@ int main() {
             double waypoint_y;
 
             // std::cout << "Waypoints X and Y in local are:" << '\n';
-            for (int i = 0; i < 15 - previous_size; i++) {
-              waypoint_x = (i + 1) * lookahead_weight / num_waypoints;
+            for (int i = 0; i < 30 - previous_size; i++) {
+              waypoint_x = anchor_x_local[1] + (i + 1) * lookahead_weight / num_waypoints;
               // waypoint_x = (i + 1) * 2;
               waypoint_y = sp(waypoint_x);
               waypoints_x_local.push_back(waypoint_x);
               waypoints_y_local.push_back(waypoint_y);
-              // std::cout << "X: " << waypoint_x << '\n';
-              // std::cout << "Y: " << waypoint_y << '\n';
+              std::cout << "X: " << waypoint_x << '\n';
+              std::cout << "Y: " << waypoint_y << '\n';
             }
 
             for (int i = 0; i < previous_size; i++) {
@@ -383,7 +383,7 @@ int main() {
 
             //Step 8 - Convert waypoints from local to global coordinates
             // std::cout << "Waypoints global are:" << '\n';
-            for (int i = 0; i < 15 - previous_size; i++) {
+            for (int i = 0; i < 30 - previous_size; i++) {
               // reverse_diff_x = waypoints_x_local[i] + anchor_x[0];
               // reverse_diff_y = waypoints_y_local[i] + anchor_y[0];
               waypoint_x = waypoints_x_local[i] * cos(current_yaw_rad) - waypoints_y_local[i] * sin(current_yaw_rad);
