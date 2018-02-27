@@ -254,7 +254,16 @@ int main() {
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
             //start
 
-            double intended_velocity = 5.0 * 1609.344 / 3600;
+            double velocity_mph_to_ms_conv = 1609.344 / 3600;
+            double speed_limit = 45 * velocity_mph_to_ms_conv;
+            double intended_velocity = speed_limit;
+
+            // if (car_speed < speed_limit) {
+            //   std::cout << "Car speed is :" << car_speed << '\n';
+            //   intended_velocity = car_speed;
+            // } else {
+            //   intended_velocity = car_speed;
+            // }
 
             //Anchor points for spline in global coordinates
             std::vector<double> anchor_x;
@@ -264,20 +273,48 @@ int main() {
             std::vector<double> anchor_x_local;
             std::vector<double> anchor_y_local;
 
-            //Step 1 - Start point is car's current position
-            anchor_x.push_back(car_x);
-            anchor_y.push_back(car_y);
+            //Step 1 - Start point is car's current position or previous path
+            double current_yaw_rad;
+            double tmp_x_1;
+            double tmp_y_1;
+            double tmp_x_2;
+            double tmp_y_2;
+            int previous_size = previous_path_x.size();
+            std::cout << "Previous size is: " << previous_size << '\n';
+            if (previous_size > 2) {
+              std::cout << "Found previous!" << '\n';
+              tmp_x_2 = previous_path_x[previous_size - 2];
+              tmp_y_2 = previous_path_y[previous_size - 2];
+              tmp_x_1 = previous_path_x[previous_size - 1];
+              tmp_y_1 = previous_path_y[previous_size - 1];
+              anchor_x.push_back(tmp_x_2);
+              anchor_y.push_back(tmp_y_2);
+
+              anchor_x.push_back(tmp_x_1);
+              anchor_y.push_back(tmp_y_1);
+
+              current_yaw_rad = atan2(tmp_y_1 - tmp_y_2, tmp_x_1 - tmp_x_2);
+              // current_yaw_rad = atan2((1.732 - 0), (2-1));
+            } else {
+              std::cout << "No previous!" << '\n';
+              anchor_x.push_back(car_x - cos(car_yaw));
+              anchor_y.push_back(car_y - sin(car_yaw));
+              anchor_x.push_back(car_x);
+              anchor_y.push_back(car_y);
+              current_yaw_rad = deg2rad(car_yaw);
+            }
 
             //Step 2 - Set lookahead distance and anchors
             double lookahead_weight = 30; //This is 30 meters
-            int num_lookahead_steps = 2;
+            int num_lookahead_steps = 3;
 
             //Step 3 - Use car's frenet coordinates to get lookahead frenets and convert them to global
             double tmp_lookahead_s = 0.0;
             double tmp_lookahead_d = 0.0;
+            std::vector<double> tmp_frenet = getFrenet(anchor_x[0], anchor_y[0], current_yaw_rad, map_waypoints_x, map_waypoints_y);
             std::vector<double> tmp_global_xy;
             for (int i = 0; i < num_lookahead_steps; i++) {
-                tmp_lookahead_s = car_s + ((i + 1) * lookahead_weight);
+                tmp_lookahead_s = tmp_frenet[0] + ((i + 1) * lookahead_weight);
                 tmp_lookahead_d = (lane_id * lane_width) + (lane_width/2);
                 tmp_global_xy = getXY(tmp_lookahead_s, tmp_lookahead_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
                 anchor_x.push_back(tmp_global_xy[0]);
@@ -291,12 +328,11 @@ int main() {
             double tmp_diff_y;
             double tmp_local_x;
             double tmp_local_y;
-            double current_yaw_rad = deg2rad(car_yaw);
             // double current_yaw_rad = car_yaw;
-            std::cout << "Current yaw deg is: " << car_yaw << '\n';
-            std::cout << "Current yaw rad is: " << current_yaw_rad << '\n';
+            // std::cout << "Current yaw deg is: " << car_yaw << '\n';
+            // std::cout << "Current yaw rad is: " << current_yaw_rad << '\n';
 
-            std::cout << "Local x and y are:" << '\n';
+            // std::cout << "Local x and y are:" << '\n';
             for (int i = 0; i < anchor_x.size(); i++) {
               tmp_diff_x = anchor_x[i] - anchor_x[0];
               tmp_diff_y = anchor_y[i] - anchor_y[0];
@@ -307,8 +343,8 @@ int main() {
               anchor_x_local.push_back(tmp_local_x);
               anchor_y_local.push_back(tmp_local_y);
 
-              std::cout << "X: " << anchor_x_local[i] << '\n';
-              std::cout << "Y:" << anchor_y_local[i] << '\n';
+              // std::cout << "X: " << anchor_x_local[i] << '\n';
+              // std::cout << "Y:" << anchor_y_local[i] << '\n';
             }
 
             //Step 5 - Initialize a spline and set local anchor points to it
@@ -322,7 +358,7 @@ int main() {
             // iii. Determine y value from the spline curve
             double minimum_distance_simulator = intended_velocity * simulator_reach_time;
             int num_waypoints = sqrt(pow(lookahead_weight, 2) + pow(sp(lookahead_weight), 2)) / minimum_distance_simulator;
-            std::cout << "Number of waypoints are:" << num_waypoints << '\n';
+            // std::cout << "Number of waypoints are:" << num_waypoints << '\n';
 
             std::vector<double> waypoints_x_local;
             std::vector<double> waypoints_y_local;
@@ -330,8 +366,9 @@ int main() {
             double waypoint_y;
 
             // std::cout << "Waypoints X and Y in local are:" << '\n';
-            for (int i = 0; i < num_waypoints; i++) {
+            for (int i = 0; i < 15 - previous_size; i++) {
               waypoint_x = (i + 1) * lookahead_weight / num_waypoints;
+              // waypoint_x = (i + 1) * 2;
               waypoint_y = sp(waypoint_x);
               waypoints_x_local.push_back(waypoint_x);
               waypoints_y_local.push_back(waypoint_y);
@@ -339,21 +376,27 @@ int main() {
               // std::cout << "Y: " << waypoint_y << '\n';
             }
 
+            for (int i = 0; i < previous_size; i++) {
+              next_x_vals.push_back(previous_path_x[i]);
+              next_y_vals.push_back(previous_path_y[i]);
+            }
+
             //Step 8 - Convert waypoints from local to global coordinates
-            double reverse_diff_x;
-            double reverse_diff_y;
             // std::cout << "Waypoints global are:" << '\n';
-            for (int i = 0; i < 100; i++) {
-              reverse_diff_x = waypoints_x_local[i] + anchor_x[0];
-              reverse_diff_y = waypoints_y_local[i] + anchor_y[0];
-              waypoint_x = reverse_diff_x * cos(current_yaw_rad) - reverse_diff_y * sin(current_yaw_rad);
-              waypoint_y = reverse_diff_x * sin(current_yaw_rad) + reverse_diff_y * cos(current_yaw_rad);
+            for (int i = 0; i < 15 - previous_size; i++) {
+              // reverse_diff_x = waypoints_x_local[i] + anchor_x[0];
+              // reverse_diff_y = waypoints_y_local[i] + anchor_y[0];
+              waypoint_x = waypoints_x_local[i] * cos(current_yaw_rad) - waypoints_y_local[i] * sin(current_yaw_rad);
+              waypoint_y = waypoints_x_local[i] * sin(current_yaw_rad) + waypoints_y_local[i] * cos(current_yaw_rad);
+              waypoint_x += anchor_x[0];
+              waypoint_y += anchor_y[0];
 
               next_x_vals.push_back(waypoint_x);
               next_y_vals.push_back(waypoint_y);
               // std::cout << "X: " << waypoint_x << '\n';
               // std::cout << "Y: " << waypoint_y << '\n';
             }
+            // std::cout << "Previous X size is: " << previous_path_x.size() <<'\n';
 
             // std::cout << "Complete======================" <<'\n';
           	msgJson["next_x"] = next_x_vals;
