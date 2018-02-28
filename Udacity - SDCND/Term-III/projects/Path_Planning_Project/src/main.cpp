@@ -249,19 +249,55 @@ int main() {
             int lane_width = 4;
             // Time taken by simulator to travel from current to next waypoint - 20 ms
             double simulator_reach_time = 0.02;
+            double velocity_mph_to_ms_conv = 1609.344 / 3600;
+            double safe_speed_limit = 45;
 
+            std::vector<string> fsmNodes;
+            fsmNodes.push_back("accelerate");
+            fsmNodes.push_back("slowDown");
+            fsmNodes.push_back("laneChangeLeft");
+            fsmNodes.push_back("laneChangeRight");
+
+            static string current_fsm_state;
 
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
             //start
 
-            double velocity_mph_to_ms_conv = 1609.344 / 3600;
-            double safe_speed_limit = 45;
-            double intended_velocity = safe_speed_limit;
+            //Kick in sensor fusion to detect potential collisions ahead of car
+            std::vector<vector<double>> potential_collision_cars;
+            for (int i = 0; i < sensor_fusion.size(); i++){
+              double current_car_s = sensor_fusion[i][5];
+              double current_car_d = sensor_fusion[i][6];
 
-            if (car_speed < safe_speed_limit) {
-              std::cout << "Car speed is :" << car_speed << '\n';
+              if ((current_car_s > car_s) && ((current_car_s - car_s) < 30)) {
+                potential_collision_cars.push_back(sensor_fusion[i]);
+
+                //Car is in the same lane as our car
+                if ((current_car_d > (lane_id * lane_width)) &&
+                (current_car_d < ((lane_id + 1) * lane_width))) {
+                  current_fsm_state = "slowDown";
+                }
+              }
+            }
+
+            //Initialize default FSM state
+            /*Init state when fsm is at empty node*/
+            if (current_fsm_state.length() == 0) {
+              current_fsm_state = fsmNodes[0];
+            }
+
+            double intended_velocity;
+
+            //FSM current state detection and comparison
+
+            //FSM state 'freeNav'
+            if (current_fsm_state.compare(fsmNodes[0]) == 0) {
               intended_velocity = (car_speed + 2) * velocity_mph_to_ms_conv;
-            } else {
+            } else if (current_fsm_state.compare(fsmNodes[1]) == 0) {
+              intended_velocity = (car_speed - 2) * velocity_mph_to_ms_conv;
+            }
+            /*Master check for upper limit on velocity*/
+            if (car_speed >= safe_speed_limit) {
               intended_velocity = safe_speed_limit * velocity_mph_to_ms_conv;
             }
 
@@ -280,9 +316,9 @@ int main() {
             double tmp_x_2;
             double tmp_y_2;
             int previous_size = previous_path_x.size();
-            std::cout << "Previous size is: " << previous_size << '\n';
+            // std::cout << "Previous size is: " << previous_size << '\n';
             if (previous_size > 2) {
-              std::cout << "Found previous!" << '\n';
+              // std::cout << "Found previous!" << '\n';
               tmp_x_2 = previous_path_x[previous_size - 2];
               tmp_y_2 = previous_path_y[previous_size - 2];
               tmp_x_1 = previous_path_x[previous_size - 1];
@@ -296,7 +332,7 @@ int main() {
               current_yaw_rad = atan2(tmp_y_1 - tmp_y_2, tmp_x_1 - tmp_x_2);
               // current_yaw_rad = atan2((1.732 - 0), (2-1));
             } else {
-              std::cout << "No previous!" << '\n';
+              // std::cout << "No previous!" << '\n';
               anchor_x.push_back(car_x - cos(car_yaw));
               anchor_y.push_back(car_y - sin(car_yaw));
               anchor_x.push_back(car_x);
@@ -372,8 +408,8 @@ int main() {
               waypoint_y = sp(waypoint_x);
               waypoints_x_local.push_back(waypoint_x);
               waypoints_y_local.push_back(waypoint_y);
-              std::cout << "X: " << waypoint_x << '\n';
-              std::cout << "Y: " << waypoint_y << '\n';
+              // std::cout << "X: " << waypoint_x << '\n';
+              // std::cout << "Y: " << waypoint_y << '\n';
             }
 
             for (int i = 0; i < previous_size; i++) {
