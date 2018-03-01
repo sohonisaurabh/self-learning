@@ -179,6 +179,8 @@ int main() {
   // The max s value before wrapping around the track back to 0
   double max_s = 6945.554;
 
+  double intended_velocity = 0.0;
+
   ifstream in_map_(map_file_.c_str(), ifstream::in);
 
   string line;
@@ -201,7 +203,7 @@ int main() {
   	map_waypoints_dy.push_back(d_y);
   }
 
-  h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
+  h.onMessage([&intended_velocity, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -244,62 +246,71 @@ int main() {
           	vector<double> next_y_vals;
 
             //Variables for lane definition
-            int lane_id = 1;
+            double lane_id = 1.0;
             // Width of lane in meters
-            int lane_width = 4;
+            double lane_width = 4.0;
             // Time taken by simulator to travel from current to next waypoint - 20 ms
             double simulator_reach_time = 0.02;
             double velocity_mph_to_ms_conv = 1609.344 / 3600;
-            double safe_speed_limit = 45;
+            double safe_speed_limit = 45 * velocity_mph_to_ms_conv;
+            double minimum_speed_limit = 3 * velocity_mph_to_ms_conv;
 
-            std::vector<string> fsmNodes;
-            fsmNodes.push_back("accelerate");
-            fsmNodes.push_back("slowDown");
-            fsmNodes.push_back("laneChangeLeft");
-            fsmNodes.push_back("laneChangeRight");
+            int previous_size = previous_path_x.size();
 
-            static string current_fsm_state;
+            if (previous_size > 0) {
+              car_s = end_path_s;
+            }
 
-          	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
-            //start
+            //Prediction Variables
+            bool is_car_ahead = false;
+            bool is_car_left = false;
+            bool is_car_right = false;
 
-            //Kick in sensor fusion to detect potential collisions ahead of car
-            std::vector<vector<double>> potential_collision_cars;
-            for (int i = 0; i < sensor_fusion.size(); i++){
-              double current_car_s = sensor_fusion[i][5];
-              double current_car_d = sensor_fusion[i][6];
+            //Look for sensor fusion data to predict cars on other lanes
+            for (int i = 0; i < sensor_fusion.size(); i++) {
+              double o_car_vx = sensor_fusion[i][3];
+              double o_car_vy = sensor_fusion[i][4];
+              double o_car_s = sensor_fusion[i][5];
+              double o_car_d = sensor_fusion[i][6];
+              std::cout << o_car_d << '\n';
+              int o_car_lane;
 
-              if ((current_car_s > car_s) && ((current_car_s - car_s) < 30)) {
-                potential_collision_cars.push_back(sensor_fusion[i]);
+              if (o_car_d > 0 && o_car_d < lane_width) {
+                o_car_lane = 0;
+              } else if (o_car_d > lane_width && o_car_d < (lane_width * 2)) {
+                o_car_lane = 1;
+              } else if (o_car_d > (lane_width * 2) && o_car_d < (lane_width * 3)) {
+                o_car_lane = 2;
+              } else {
+                o_car_lane = -1;
+              }
 
-                //Car is in the same lane as our car
-                if ((current_car_d > (lane_id * lane_width)) &&
-                (current_car_d < ((lane_id + 1) * lane_width))) {
-                  current_fsm_state = "slowDown";
+              double o_car_vel = sqrt(pow(o_car_vx, 2) + pow(o_car_vy, 2));
+              double o_car_s_ahead = o_car_s + (o_car_vel * simulator_reach_time * previous_size);
+
+              if (o_car_lane == lane_id) {
+                if ((o_car_s_ahead > car_s) && ((o_car_s_ahead - car_s) < 30)) {
+                  is_car_ahead = true;
+                  // std::cout << "S is: " << o_car_s_ahead << '\n';
+                  // std::cout << "Car S is: " << car_s << '\n';
                 }
               }
             }
+            // std::cout << "===================" << '\n';
 
-            //Initialize default FSM state
-            /*Init state when fsm is at empty node*/
-            if (current_fsm_state.length() == 0) {
-              current_fsm_state = fsmNodes[0];
+            if (is_car_ahead) {
+              intended_velocity -= 1.0 * velocity_mph_to_ms_conv;
+            } else {
+                intended_velocity += 0.5 * velocity_mph_to_ms_conv;
             }
 
-            double intended_velocity;
-
-            //FSM current state detection and comparison
-
-            //FSM state 'freeNav'
-            if (current_fsm_state.compare(fsmNodes[0]) == 0) {
-              intended_velocity = (car_speed + 2) * velocity_mph_to_ms_conv;
-            } else if (current_fsm_state.compare(fsmNodes[1]) == 0) {
-              intended_velocity = (car_speed - 2) * velocity_mph_to_ms_conv;
+            if (intended_velocity >= safe_speed_limit) {
+              intended_velocity = safe_speed_limit;
             }
-            /*Master check for upper limit on velocity*/
-            if (car_speed >= safe_speed_limit) {
-              intended_velocity = safe_speed_limit * velocity_mph_to_ms_conv;
+            if (intended_velocity <= minimum_speed_limit) {
+              intended_velocity = minimum_speed_limit;
             }
+
 
             //Anchor points for spline in global coordinates
             std::vector<double> anchor_x;
@@ -315,7 +326,6 @@ int main() {
             double tmp_y_1;
             double tmp_x_2;
             double tmp_y_2;
-            int previous_size = previous_path_x.size();
             // std::cout << "Previous size is: " << previous_size << '\n';
             if (previous_size > 2) {
               // std::cout << "Found previous!" << '\n';
@@ -342,15 +352,14 @@ int main() {
 
             //Step 2 - Set lookahead distance and anchors
             double lookahead_weight = 30; //This is 30 meters
-            int num_lookahead_steps = 2;
+            int num_lookahead_steps = 3;
 
             //Step 3 - Use car's frenet coordinates to get lookahead frenets and convert them to global
             double tmp_lookahead_s = 0.0;
             double tmp_lookahead_d = 0.0;
-            std::vector<double> tmp_frenet = getFrenet(anchor_x[0], anchor_y[0], current_yaw_rad, map_waypoints_x, map_waypoints_y);
             std::vector<double> tmp_global_xy;
             for (int i = 0; i < num_lookahead_steps; i++) {
-                tmp_lookahead_s = tmp_frenet[0] + ((i + 1) * lookahead_weight);
+                tmp_lookahead_s = car_s + ((i + 1) * lookahead_weight);
                 tmp_lookahead_d = (lane_id * lane_width) + (lane_width/2);
                 tmp_global_xy = getXY(tmp_lookahead_s, tmp_lookahead_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
                 anchor_x.push_back(tmp_global_xy[0]);
