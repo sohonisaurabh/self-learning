@@ -1,0 +1,56 @@
+Combinations:
+
+1.
+  keep_prob = 0.5
+  learning_rate = 0.001
+  epochs = 5
+  batch_size = 10
+  minLoss = 0.341
+  comments - Loss has a trend of decrease. Need more epochs
+
+2.
+  keep_prob = 0.5
+  learning_rate = 0.001
+  epochs = 10
+  batch_size = 10
+  minLoss = 0.2986
+  Comments - Loss is oscillating around 0.3. Need lower learning rate or less batch size.
+
+3.
+  keep_prob = 0.5
+  learning_rate = 0.001
+  epochs = 10
+  batch_size = 5
+  minLoss = 0.1883
+  Comments - Loss is decreasing but slight oscillating. Need more epochs. Batch size is minimum
+
+4.
+  keep_prob = 0.5
+  learning_rate = 0.001
+  epochs = 15
+  batch_size = 5
+  minLoss = 0.1357
+  Comments = Loss is oscillating. Definitely need lower learning rate. Epochs are fine for this learning_rate
+
+5.
+  keep_prob = 0.5
+  learning_rate = 0.0008
+  epochs = 15
+  batch_size = 5
+  minLoss = 0.1455
+  Comments = Learning rate in step 4 seems to be fine. Try with this one increasing epochs
+
+6.
+  keep_prob = 0.5
+  learning_rate = 0.0008
+  epochs = 20
+  batch_size = 5
+  minLoss = 0.1203
+  Comments - Loss is decreased, but not very sigficantly. Trying with more epochs and save of Images
+
+  6.
+  keep_prob = 0.5
+  learning_rate = 0.0008
+  epochs = 25
+  batch_size = 5
+  minLoss = 

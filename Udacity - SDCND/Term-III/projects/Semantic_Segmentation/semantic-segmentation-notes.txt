@@ -1,0 +1,35 @@
+Use kernel=4 and stride=2 with 'same' padding for double upsampling
+
+
+Load and extract outputs:
+1. Load VGG
+2. Extract output of layers in the variables
+
+
+Layers:
+1. 1x1 layer - Use regularizer here
+2. Upsampling - user regularizer here too - Use strides and kernel sizes from the classroom
+3. Use skip connections
+
+Optimize:
+1. Reshape and calculate cross entropy
+
+
+=========================================
+Problems while debug:
+
+1. VGG layer 3 out is wrong object. Same for layer 4 due to scaling applied
+
+Write up:
+
+1. Used regularizer in loss
+2. Used scaling for layer 3 and 4. Model learns better
+3. Started with high learning rate -
+	1 - Loss was Nan
+	0.1 - Loss was Nan
+	0.01 - Loss was decreasing but not so much
+	0.001 - 
+4. Epochs was 5 in the begining. When network was thought to improve, epochs were increased until 30
+5. Performed well for near by detection than far away.
+6. Perfromed extremely good in crowded places or where features such as cars, sign boards are prominent
+7. Did not perform good on images with shadow on road. This can be corrected using PCA whitening, brighness correction and normalization algorithms
